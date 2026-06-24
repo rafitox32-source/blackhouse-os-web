@@ -6,6 +6,7 @@
     <title>BlackHouse OS | El Sistema Definitivo para Servicios Técnicos</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -211,15 +212,18 @@
                     <h3 class="text-2xl font-bold text-white">Acceso al Panel</h3>
                     <p class="text-sm text-gray-400 mt-1">Ingresa tus credenciales de administrador</p>
                 </div>
-                <form class="space-y-4" action="panel.html" method="POST">
+                <form class="space-y-4" onsubmit="event.preventDefault(); iniciarSesionWeb();">
                     <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Correo Electrónico</label>
-                        <input type="email" required class="w-full bg-bhDark border border-gray-800 focus:border-bhPurple focus:outline-none rounded-xl px-4 py-3 text-white transition text-sm" placeholder="ejemplo@taller.com">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Correo Electrónico / Usuario</label>
+                        <input type="email" id="web-email" required class="w-full bg-bhDark border border-gray-800 focus:border-bhPurple focus:outline-none rounded-xl px-4 py-3 text-white transition text-sm" placeholder="ejemplo@taller.com">
                     </div>
                     <div>
                         <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Contraseña</label>
-                        <input type="password" required class="w-full bg-bhDark border border-gray-800 focus:border-bhPurple focus:outline-none rounded-xl px-4 py-3 text-white transition text-sm" placeholder="••••••••">
+                        <input type="password" id="web-pass" required class="w-full bg-bhDark border border-gray-800 focus:border-bhPurple focus:outline-none rounded-xl px-4 py-3 text-white transition text-sm" placeholder="••••••••">
                     </div>
+                    
+                    <p id="login-msg" class="text-sm font-bold text-center hidden"></p>
+                    
                     <button type="submit" class="w-full bg-bhPurple hover:bg-bhPurpleHover text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-bhPurple/20 text-sm mt-2">
                         Entrar al Sistema
                     </button>
@@ -233,7 +237,48 @@
     </footer>
 
     <script>
-        // Data para alimentar las ventanas explicativas interactivas
+        // -------------------------------------------------------------
+        // CONEXIÓN CON SUPABASE PARA EL LOGIN WEB
+        // -------------------------------------------------------------
+        
+        // ¡REEMPLAZA ESTO POR TUS CLAVES REALES DE SUPABASE!
+        const supabaseUrl = 'https://flfhpffslhjcuvhxsnjz.supabase.co/rest/v1/';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsZmhwZmZzbGhqY3V2aHhzbmp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4Mzg0MDMsImV4cCI6MjA4NDQxNDQwM30.9AxJDLzH2f5jJxAarw5dc1DMuvDlFY2sAr6zJBNUsFc';
+        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+        async function iniciarSesionWeb() {
+            const email = document.getElementById('web-email').value;
+            const password = document.getElementById('web-pass').value;
+            const msgBox = document.getElementById('login-msg');
+
+            msgBox.innerText = "Verificando credenciales...";
+            msgBox.classList.remove('hidden', 'text-red-500', 'text-bhGreen');
+            msgBox.classList.add('text-bhPurple');
+
+            // Autenticación contra Supabase
+            const { data, error } = await supabaseClient.auth.signInWithPassword({
+                email: email,
+                password: password,
+            });
+
+            if (error) {
+                msgBox.innerText = "Correo o contraseña incorrectos.";
+                msgBox.classList.remove('text-bhPurple');
+                msgBox.classList.add('text-red-500');
+            } else {
+                msgBox.innerText = "¡Acceso concedido! Entrando...";
+                msgBox.classList.remove('text-red-500', 'text-bhPurple');
+                msgBox.classList.add('text-bhGreen');
+                
+                setTimeout(() => {
+                    window.location.href = 'panel.html';
+                }, 800);
+            }
+        }
+
+        // -------------------------------------------------------------
+        // LÓGICA DE LAS VENTANAS DE CARACTERÍSTICAS
+        // -------------------------------------------------------------
         const modalData = {
             recepcion: {
                 icon: 'fa-clipboard-list',
@@ -315,7 +360,6 @@
             }
         };
 
-        // Funciones de control de modales de características
         function openFeatureModal(id) {
             const data = modalData[id];
             document.getElementById('modal-icon-box').className = `w-12 h-12 md:w-16 md:h-16 rounded-2xl flex items-center justify-center text-2xl md:text-3xl mb-4 md:mb-6 shadow-lg ${data.color}`;
@@ -339,12 +383,10 @@
             modalExplain.classList.remove('flex');
         }
 
-        // Cierre al hacer clic fuera del recuadro
         document.getElementById('feature-explain-modal').addEventListener('click', function(e) {
             if (e.target === this) closeFeatureModal();
         });
 
-        // Controles de modales estándar (Login)
         function toggleModal(modalId) {
             const targetModal = document.getElementById(modalId);
             targetModal.classList.toggle('hidden');
