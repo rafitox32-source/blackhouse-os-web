@@ -1,19 +1,197 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BlackHouse OS | Servicio Técnico Profesional</title>
-    <style>
-        body { font-family: sans-serif; background: #0f0f0f; color: white; text-align: center; padding: 50px; }
-        .btn { background: #7c3aed; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; }
-        h1 { color: #10b981; }
-    </style>
+    <title>BlackHouse OS | El Sistema Definitivo para Servicios Técnicos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        bhDark: '#0b0b0c',
+                        bhCard: '#121214',
+                        bhPurple: '#7c3aed',
+                        bhPurpleHover: '#6d28d9',
+                        bhGreen: '#10b981'
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-<body>
-    <h1>Bienvenido a BlackHouse OS</h1>
-    <p>Servicio técnico de confianza.</p>
-    <br><br>
-    <a href="tracking.html" class="btn">Consultar estado de mi equipo</a>
+<body class="bg-bhDark text-gray-100 font-sans antialiased selection:bg-bhPurple selection:text-white">
+
+    <header class="fixed top-0 left-0 w-full bg-bhDark/80 backdrop-blur-md border-b border-gray-800 z-50">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <span class="text-2xl font-black tracking-wider text-white">BlackHouse<span class="text-bhPurple">OS</span></span>
+            </div>
+            <nav class="hidden md:flex items-center space-x-8 text-sm font-medium text-gray-400">
+                <a href="#caracteristicas" class="hover:text-white transition">Características</a>
+                <a href="#enganche" class="hover:text-white transition">Por qué elegirnos</a>
+                <a href="tracking.html" class="text-bhGreen hover:underline transition flex items-center space-x-1">
+                    <i class="fa-solid px-1 fa-qrcode"></i> Rastreo de Clientes
+                </a>
+            </nav>
+            <div class="flex items-center space-x-4">
+                <button onclick="toggleModal('login-modal')" class="text-sm font-semibold hover:text-white transition px-4 py-2">Iniciar Sesión</button>
+                <a href="https://wa.me/tu_numero" class="bg-bhPurple hover:bg-bhPurpleHover text-white text-sm font-bold px-5 py-2.5 rounded-lg transition shadow-lg shadow-bhPurple/20">
+                    Adquirir Licencia
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <section class="relative pt-36 pb-20 md:pt-48 md:pb-32 overflow-hidden">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(124,58,237,0.12),transparent_45%)]"></div>
+        <div class="max-w-7xl mx-auto px-6 relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            
+            <div class="lg:col-span-7 text-center lg:text-left space-y-6">
+                <span class="inline-flex items-center gap-2 bg-bhPurple/10 border border-bhPurple/30 text-bhPurple text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full">
+                    <i class="fa-solid fa-bolt text-bhGreen"></i> Gestión Inteligente en Tiempo Real
+                </span>
+                <h1 class="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-white leading-[1.1]">
+                    Lleva tu Taller al <span class="bg-clip-text text-transparent bg-gradient-to-r from-bhPurple to-indigo-400">Nivel Empresarial</span>
+                </h1>
+                <p class="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto lg:mx-0 font-light leading-relaxed">
+                    Deja de perder dinero en desorden. Controla inventarios, recepciones, órdenes técnicas, facturación y estados de clientes con una plataforma premium diseñada por y para técnicos profesionales.
+                </p>
+                <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4">
+                    <a href="https://wa.me/tu_numero" class="w-full sm:w-auto text-center bg-bhPurple hover:bg-bhPurpleHover text-white font-extrabold px-8 py-4 rounded-xl transition transform hover:-translate-y-0.5 shadow-xl shadow-bhPurple/30 text-lg">
+                        <i class="fa-brands fa-whatsapp mr-2"></i> Solicitar Demo Gratis
+                    </a>
+                    <a href="#caracteristicas" class="w-full sm:w-auto text-center bg-transparent border border-gray-700 hover:border-gray-500 text-white font-semibold px-8 py-4 rounded-xl transition text-lg">
+                        Ver Características
+                    </a>
+                </div>
+            </div>
+
+            <div class="lg:col-span-5 relative">
+                <div class="absolute inset-0 bg-bhPurple/20 blur-3xl rounded-full"></div>
+                <div class="relative bg-gradient-to-b from-gray-800 to-transparent p-1 rounded-2xl shadow-2xl backdrop-blur-sm border border-gray-800">
+                    <div class="bg-bhDark rounded-xl overflow-hidden aspect-[16/10] flex flex-col items-center justify-center p-6 border border-gray-700/50">
+                        <i class="fa-solid fa-display text-5xl text-bhPurple/50 mb-4 animate-pulse"></i>
+                        <p class="text-sm text-gray-500 text-center font-mono">[ Espacio para Mockup o Captura de BlackHouse OS ]</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="caracteristicas" class="py-20 border-t border-gray-900 bg-black/40">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center max-w-3xl mx-auto space-y-4 mb-16">
+                <h2 class="text-3xl md:text-4xl font-extrabold text-white tracking-tight">Todo lo que necesitas para dominar el mercado</h2>
+                <p class="text-gray-400">Un ecosistema de herramientas optimizadas para erradicar los errores humanos y multiplicar tus ingresos.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="bg-bhCard border border-gray-800/60 p-8 rounded-2xl hover:border-bhPurple/50 transition group">
+                    <div class="w-12 h-12 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-6 font-bold text-xl group-hover:bg-bhPurple group-hover:text-white transition">
+                        <i class="fa-solid fa-clipboard-list"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Recepción Dinámica</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Registra equipos en segundos. Captura fallas visuales, datos del cliente y genera hojas de ingreso automáticas.</p>
+                </div>
+
+                <div class="bg-bhCard border border-gray-800/60 p-8 rounded-2xl hover:border-bhPurple/50 transition group">
+                    <div class="w-12 h-12 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-6 font-bold text-xl group-hover:bg-bhPurple group-hover:text-white transition">
+                        <i class="fa-solid fa-flask"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Laboratorio y Taller Organizado</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Asigna prioridades, técnicos responsables y lleva una trazabilidad quirúrgica de cada reparación en curso.</p>
+                </div>
+
+                <div class="bg-bhCard border border-gray-800/60 p-8 rounded-2xl hover:border-bhPurple/50 transition group">
+                    <div class="w-12 h-12 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-6 font-bold text-xl group-hover:bg-bhPurple group-hover:text-white transition">
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Inventario de Repuestos Blindado</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Alerta de stock bajo para pantallas, baterías y flexores. Vincula repuestos directamente al costo de la orden.</p>
+                </div>
+
+                <div class="bg-bhCard border border-gray-800/60 p-8 rounded-2xl hover:border-bhPurple/50 transition group">
+                    <div class="w-12 h-12 bg-bhGreen/10 text-bhGreen rounded-xl flex items-center justify-center mb-6 font-bold text-xl group-hover:bg-bhGreen group-hover:text-white transition">
+                        <i class="fa-solid fa-qrcode"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Rastreo por Código QR</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Tus clientes escanean el ticket y ven el estado en tiempo real. Reduce en un 70% las llamadas molestas preguntando "¿Ya quedó?".</p>
+                </div>
+
+                <div class="bg-bhCard border border-gray-800/60 p-8 rounded-2xl hover:border-bhPurple/50 transition group">
+                    <div class="w-12 h-12 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-6 font-bold text-xl group-hover:bg-bhPurple group-hover:text-white transition">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Analista Financiero con IA</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Análisis predictivo de tus ganancias y métricas de rendimiento por empleado para tomar decisiones como un verdadero empresario.</p>
+                </div>
+
+                <div class="bg-bhCard border border-gray-800/60 p-8 rounded-2xl hover:border-bhPurple/50 transition group">
+                    <div class="w-12 h-12 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-6 font-bold text-xl group-hover:bg-bhPurple group-hover:text-white transition">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Caja y Facturación</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Control total de ingresos, adelantos, cuentas por cobrar y cierres de caja diarios limpios y sin descuadres.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="enganche" class="py-20 relative overflow-hidden">
+        <div class="max-w-5xl mx-auto px-6 text-center space-y-8 relative z-10">
+            <h2 class="text-3xl md:text-5xl font-black text-white">¿Cuánto dinero estás perdiendo hoy por falta de control?</h2>
+            <p class="text-gray-400 text-lg md:text-xl max-w-3xl mx-auto font-light leading-relaxed">
+                El desorden aleja a los clientes premium. Con <span class="text-white font-bold">BlackHouse OS</span>, ofreces una experiencia transparente, automatizas las tareas tediosas y recuperas el control total de tu negocio desde cualquier lugar.
+            </p>
+            <div class="pt-6">
+                <a href="https://wa.me/tu_numero" class="inline-flex items-center space-x-3 bg-gradient-to-r from-bhPurple to-indigo-600 hover:from-bhPurpleHover hover:to-indigo-700 text-white font-extrabold px-10 py-5 rounded-2xl transition transform hover:-translate-y-1 shadow-2xl shadow-bhPurple/40 text-xl">
+                    <span>Quiero Digitalizar mi Taller Ahora</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+        <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-2/3 h-px bg-gradient-to-r from-transparent via-bhPurple/40 to-transparent"></div>
+    </section>
+
+    <div id="login-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-bhCard border border-gray-800 w-full max-w-md rounded-2xl p-8 relative shadow-2xl">
+            <button onclick="toggleModal('login-modal')" class="absolute top-4 right-4 text-gray-500 hover:text-white transition">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <div class="space-y-6">
+                <div class="text-center">
+                    <h3 class="text-2xl font-bold text-white">Acceso al Panel</h3>
+                    <p class="text-sm text-gray-400 mt-1">Ingresa tus credenciales de administrador</p>
+                </div>
+                <form class="space-y-4" onsubmit="event.preventDefault(); alert('Aquí conectarás tu lógica Supabase Auth');">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Correo Electrónico</label>
+                        <input type="email" required class="w-full bg-bhDark border border-gray-800 focus:border-bhPurple focus:outline-none rounded-xl px-4 py-3 text-white transition text-sm" placeholder="ejemplo@taller.com">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Contraseña</label>
+                        <input type="password" required class="w-full bg-bhDark border border-gray-800 focus:border-bhPurple focus:outline-none rounded-xl px-4 py-3 text-white transition text-sm" placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="w-full bg-bhPurple hover:bg-bhPurpleHover text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-bhPurple/20 text-sm mt-2">
+                        Entrar al Sistema
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-bhDark border-t border-gray-900 py-12 text-center text-sm text-gray-600">
+        <p>&copy; 2026 BlackHouse OS. Todos los derechos reservados. Diseñado para potenciar tu productividad.</p>
+    </footer>
+
+    <script>
+        function toggleModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.toggle('hidden');
+        }
+    </script>
 </body>
 </html>
