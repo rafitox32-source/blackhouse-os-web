@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Rastreo de Orden | BlackHouse</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { background: #0f0f0f; color: white; display: flex; justify-content: center; padding: 50px; }
+        .card { background: #1a1a1a; padding: 30px; border-radius: 12px; width: 300px; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; }
+        button { width: 100%; padding: 10px; background: #10b981; border: none; color: white; cursor: pointer; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Rastrear Orden</h2>
+        <input type="number" id="orderId" placeholder="Número de orden">
+        <button onclick="buscar()">Buscar</button>
+        <div id="resultado" style="margin-top: 20px;"></div>
+    </div>
+
+    <script>
+        // ¡OJO! Pon aquí tus credenciales de Supabase
+        const supabase = supabase.createClient('https://flfhpffslhjcuvhxsnjz.supabase.co/rest/v1/', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsZmhwZmZzbGhqY3V2aHhzbmp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4Mzg0MDMsImV4cCI6MjA4NDQxNDQwM30.9AxJDLzH2f5jJxAarw5dc1DMuvDlFY2sAr6zJBNUsFc');
+
+        async function buscar() {
+            const id = document.getElementById('orderId').value;
+const { data, error } = await supabase
+  .from('ordenes')
+  .select('modelo, estado, fecha_entrega') // Solo estas columnas se verán
+  .eq('id', id)
+  .single();
+        }
+    </script>
+</body>
+</html>
