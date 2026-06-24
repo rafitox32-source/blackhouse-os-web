@@ -11,8 +11,8 @@
             theme: {
                 extend: {
                     colors: {
-                        bhDark: '#050505',
-                        bhCard: '#101010',
+                        bhDark: '#0b0b0c',
+                        bhCard: '#121214',
                         bhPurple: '#7c3aed',
                         bhPurpleHover: '#6d28d9',
                         bhGreen: '#10b981'
@@ -22,7 +22,6 @@
         }
     </script>
     <style>
-        /* Animaciones para la ventana modal */
         @keyframes modalFadeIn {
             from { opacity: 0; transform: scale(0.95) translateY(10px); }
             to { opacity: 1; transform: scale(1) translateY(0); }
@@ -32,18 +31,20 @@
 </head>
 <body class="bg-bhDark text-gray-100 font-sans antialiased selection:bg-bhPurple selection:text-white">
 
-    <header class="fixed top-0 left-0 w-full bg-bhDark/90 backdrop-blur-lg border-b border-gray-800 z-40">
+    <header class="fixed top-0 left-0 w-full bg-bhDark/80 backdrop-blur-md border-b border-gray-800 z-40">
         <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
             <div class="flex items-center space-x-2">
                 <span class="text-2xl font-black tracking-wider text-white">BlackHouse<span class="text-bhPurple">OS</span></span>
             </div>
             <nav class="hidden md:flex items-center space-x-8 text-sm font-medium text-gray-400">
-                <a href="#caracteristicas" class="hover:text-white transition">Módulos del Sistema</a>
+                <a href="#caracteristicas" class="hover:text-white transition">Características</a>
+                <a href="#enganche" class="hover:text-white transition">Por qué elegirnos</a>
                 <a href="tracking.html" class="text-bhGreen hover:underline transition flex items-center space-x-1">
                     <i class="fa-solid px-1 fa-qrcode"></i> Rastreo de Clientes
                 </a>
             </nav>
             <div class="flex items-center space-x-4">
+                <button onclick="toggleModal('login-modal')" class="text-sm font-semibold hover:text-white transition px-4 py-2">Iniciar Sesión</button>
                 <a href="https://wa.me/51999888777" class="bg-bhPurple hover:bg-bhPurpleHover text-white text-sm font-bold px-5 py-2.5 rounded-lg transition shadow-lg shadow-bhPurple/20">
                     Adquirir Licencia
                 </a>
@@ -51,215 +52,302 @@
         </div>
     </header>
 
-    <section class="relative pt-36 pb-20 md:pt-48 md:pb-24 overflow-hidden">
-        <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(124,58,237,0.15),transparent_50%)]"></div>
-        <div class="max-w-4xl mx-auto px-6 relative z-10 text-center space-y-8">
-            <span class="inline-flex items-center gap-2 bg-bhPurple/10 border border-bhPurple/30 text-bhPurple text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full">
-                <i class="fa-solid fa-microchip"></i> Software de Gestión Inteligente
-            </span>
-            <h1 class="text-5xl md:text-7xl font-black tracking-tight text-white leading-tight">
-                El Control Total de tu Taller <br>
-                <span class="bg-clip-text text-transparent bg-gradient-to-r from-bhPurple to-indigo-400">en una sola pantalla.</span>
-            </h1>
-            <p class="text-gray-400 text-lg md:text-xl font-light leading-relaxed max-w-2xl mx-auto">
-                Diseñado por y para técnicos. Recepción con firma digital, control de inventario con IA, facturación integrada y notificaciones automáticas por WhatsApp.
-            </p>
-        </div>
-    </section>
-
-    <section id="caracteristicas" class="py-20 border-t border-gray-900 bg-[#0a0a0a]">
-        <div class="max-w-7xl mx-auto px-6">
-            <div class="text-center max-w-3xl mx-auto space-y-4 mb-16">
-                <h2 class="text-3xl md:text-4xl font-extrabold text-white tracking-tight">El ecosistema técnico más avanzado</h2>
-                <p class="text-gray-400">Haz clic en cada módulo para descubrir cómo revolucionará tu manera de trabajar.</p>
+    <section class="relative pt-36 pb-20 md:pt-48 md:pb-32 overflow-hidden">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(124,58,237,0.12),transparent_45%)]"></div>
+        <div class="max-w-7xl mx-auto px-6 relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            
+            <div class="lg:col-span-7 text-center lg:text-left space-y-6">
+                <span class="inline-flex items-center gap-2 bg-bhPurple/10 border border-bhPurple/30 text-bhPurple text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full">
+                    <i class="fa-solid fa-bolt text-bhGreen"></i> Gestión Inteligente en Tiempo Real
+                </span>
+                <h1 class="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-white leading-[1.1]">
+                    Lleva tu Taller al <span class="bg-clip-text text-transparent bg-gradient-to-r from-bhPurple to-indigo-400">Nivel Empresarial</span>
+                </h1>
+                <p class="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto lg:mx-0 font-light leading-relaxed">
+                    Deja de perder dinero en desorden. Controla inventarios, recepciones, órdenes técnicas, facturación y estados de clientes con una plataforma premium diseñada por y para técnicos profesionales.
+                </p>
+                <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4">
+                    <a href="https://wa.me/51999888777" class="w-full sm:w-auto text-center bg-bhPurple hover:bg-bhPurpleHover text-white font-extrabold px-8 py-4 rounded-xl transition transform hover:-translate-y-0.5 shadow-xl shadow-bhPurple/30 text-lg">
+                        <i class="fa-brands fa-whatsapp mr-2"></i> Solicitar Demo Gratis
+                    </a>
+                    <a href="#caracteristicas" class="w-full sm:w-auto text-center bg-transparent border border-gray-700 hover:border-gray-500 text-white font-semibold px-8 py-4 rounded-xl transition text-lg">
+                        Ver Características
+                    </a>
+                </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="features-grid">
+            <div class="lg:col-span-5 relative">
+                <div class="absolute inset-0 bg-bhPurple/20 blur-3xl rounded-full"></div>
+                <div class="relative bg-gradient-to-b from-gray-800 to-transparent p-1 rounded-2xl shadow-2xl backdrop-blur-sm border border-gray-800">
+                    <div class="bg-bhDark rounded-xl overflow-hidden aspect-[16/10] flex flex-col items-center justify-center p-6 border border-gray-700/50">
+                        <i class="fa-solid fa-display text-5xl text-bhPurple/50 mb-4 animate-pulse"></i>
+                        <p class="text-sm text-gray-500 text-center font-mono">[ Espacio para Mockup o Captura de BlackHouse OS ]</p>
+                    </div>
                 </div>
+            </div>
         </div>
     </section>
 
-    <div id="feature-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
-        <div class="bg-[#111] border border-gray-800 w-full max-w-2xl rounded-2xl relative shadow-2xl overflow-hidden modal-animated" id="modal-content-box">
+    <section id="caracteristicas" class="py-20 border-t border-gray-900 bg-black/40">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center max-w-3xl mx-auto space-y-4 mb-16">
+                <h2 class="text-3xl md:text-4xl font-extrabold text-white tracking-tight">Todo lo que necesitas para dominar el mercado</h2>
+                <p class="text-gray-400">Haz clic sobre cualquiera de los módulos para abrir los detalles técnicos y ver su funcionamiento.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                
+                <div onclick="openFeatureModal('recepcion')" class="bg-bhCard border border-gray-800/60 p-8 rounded-2xl hover:border-bhPurple/50 transition-all group cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:shadow-bhPurple/5">
+                    <div class="w-12 h-12 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-6 font-bold text-xl group-hover:bg-bhPurple group-hover:text-white transition-all">
+                        <i class="fa-solid fa-clipboard-list"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Recepción Dinámica</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4">Registra equipos en segundos. Captura fallas visuales, datos del cliente y genera hojas de ingreso automáticas.</p>
+                    <span class="text-xs font-bold text-bhPurple flex items-center gap-1 group-hover:gap-2 transition-all">Ver detalles e IA <i class="fa-solid fa-arrow-right"></i></span>
+                </div>
+
+                <div onclick="openFeatureModal('laboratorio')" class="bg-bhCard border border-gray-800/60 p-8 rounded-2xl hover:border-bhPurple/50 transition-all group cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:shadow-bhPurple/5">
+                    <div class="w-12 h-12 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-6 font-bold text-xl group-hover:bg-bhPurple group-hover:text-white transition-all">
+                        <i class="fa-solid fa-flask"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Laboratorio Técnico</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4">Asigna prioridades, técnicos responsables y lleva una trazabilidad quirúrgica de cada reparación en curso.</p>
+                    <span class="text-xs font-bold text-bhPurple flex items-center gap-1 group-hover:gap-2 transition-all">Ver herramientas <i class="fa-solid fa-arrow-right"></i></span>
+                </div>
+
+                <div onclick="openFeatureModal('inventario')" class="bg-bhCard border border-gray-800/60 p-8 rounded-2xl hover:border-bhPurple/50 transition-all group cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:shadow-bhPurple/5">
+                    <div class="w-12 h-12 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-6 font-bold text-xl group-hover:bg-bhPurple group-hover:text-white transition-all">
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Inventario Blindado</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4">Alerta de stock bajo para pantallas, baterías y flexores. Vincula repuestos directamente al costo de la orden.</p>
+                    <span class="text-xs font-bold text-bhPurple flex items-center gap-1 group-hover:gap-2 transition-all">Ver carga inteligente <i class="fa-solid fa-arrow-right"></i></span>
+                </div>
+
+                <div onclick="openFeatureModal('tracking')" class="bg-bhCard border border-gray-800/60 p-8 rounded-2xl hover:border-bhGreen/50 transition-all group cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:shadow-bhGreen/5">
+                    <div class="w-12 h-12 bg-bhGreen/10 text-bhGreen rounded-xl flex items-center justify-center mb-6 font-bold text-xl group-hover:bg-bhGreen group-hover:text-white transition-all">
+                        <i class="fa-solid fa-qrcode"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Rastreo por Código QR</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4">Tus clientes escanean el ticket y ven el estado en tiempo real. Reduce en un 70% las llamadas molestas preguntando "¿Ya quedó?".</p>
+                    <span class="text-xs font-bold text-bhGreen flex items-center gap-1 group-hover:gap-2 transition-all">Ver cómo funciona <i class="fa-solid fa-arrow-right"></i></span>
+                </div>
+
+                <div onclick="openFeatureModal('reportes')" class="bg-bhCard border border-gray-800/60 p-8 rounded-2xl hover:border-bhPurple/50 transition-all group cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:shadow-bhPurple/5">
+                    <div class="w-12 h-12 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-6 font-bold text-xl group-hover:bg-bhPurple group-hover:text-white transition-all">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Analista Financiero IA</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4">Análisis predictivo de tus ganancias y métricas de rendimiento por empleado para tomar decisiones estratégicas.</p>
+                    <span class="text-xs font-bold text-bhPurple flex items-center gap-1 group-hover:gap-2 transition-all">Ver reportes IA <i class="fa-solid fa-arrow-right"></i></span>
+                </div>
+
+                <div onclick="openFeatureModal('facturacion')" class="bg-bhCard border border-gray-800/60 p-8 rounded-2xl hover:border-bhPurple/50 transition-all group cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:shadow-bhPurple/5">
+                    <div class="w-12 h-12 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-6 font-bold text-xl group-hover:bg-bhPurple group-hover:text-white transition-all">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Caja y Facturación</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4">Control total de ingresos, adelantos, cuentas por cobrar, emisión de comprobantes y cierres de caja limpios.</p>
+                    <span class="text-xs font-bold text-bhPurple flex items-center gap-1 group-hover:gap-2 transition-all">Ver módulos SUNAT <i class="fa-solid fa-arrow-right"></i></span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="enganche" class="py-20 relative overflow-hidden">
+        <div class="max-w-5xl mx-auto px-6 text-center space-y-8 relative z-10">
+            <h2 class="text-3xl md:text-5xl font-black text-white">¿Cuánto dinero estás perdiendo hoy por falta de control?</h2>
+            <p class="text-gray-400 text-lg md:text-xl max-w-3xl mx-auto font-light leading-relaxed">
+                El desorden aleja a los clientes premium. Con <span class="text-white font-bold">BlackHouse OS</span>, ofreces una experiencia transparente, automatizas las tareas tediosas y recuperas el control total de tu negocio desde cualquier lugar.
+            </p>
+            <div class="pt-6">
+                <a href="https://wa.me/51999888777" class="inline-flex items-center space-x-3 bg-gradient-to-r from-bhPurple to-indigo-600 hover:from-bhPurpleHover hover:to-indigo-700 text-white font-extrabold px-10 py-5 rounded-2xl transition transform hover:-translate-y-1 shadow-2xl shadow-bhPurple/40 text-xl">
+                    <span>Quiero Digitalizar mi Taller Ahora</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+        <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-2/3 h-px bg-gradient-to-r from-transparent via-bhPurple/40 to-transparent"></div>
+    </section>
+
+    <div id="feature-explain-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-[#111] border border-gray-800 w-full max-w-2xl rounded-2xl relative shadow-2xl overflow-hidden modal-animated">
             
-            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-500 hover:text-white transition z-10 bg-black/50 p-2 rounded-full w-10 h-10 flex items-center justify-center">
+            <button onclick="closeFeatureModal()" class="absolute top-4 right-4 text-gray-500 hover:text-white transition bg-black/50 p-2 rounded-full w-10 h-10 flex items-center justify-center">
                 <i class="fa-solid fa-xmark text-xl"></i>
             </button>
 
-            <div id="modal-header" class="p-8 pb-6 border-b border-gray-800/50 bg-gradient-to-b from-gray-800/20 to-transparent">
-                <div id="modal-icon" class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-lg"></div>
-                <h3 id="modal-title" class="text-3xl font-black text-white mb-2">Título</h3>
-                <p id="modal-subtitle" class="text-bhPurple font-semibold text-sm uppercase tracking-wider">Subtítulo</p>
+            <div class="p-8 pb-6 border-b border-gray-800/50 bg-gradient-to-b from-gray-800/20 to-transparent">
+                <div id="modal-icon-box" class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-lg"></div>
+                <h3 id="modal-title-text" class="text-3xl font-black text-white mb-2">Título</h3>
+                <p id="modal-subtitle-text" class="text-bhPurple font-semibold text-sm uppercase tracking-wider">Subtítulo</p>
             </div>
 
             <div class="p-8 space-y-6">
-                <p id="modal-desc" class="text-gray-300 text-lg leading-relaxed font-light">Descripción principal del gancho de ventas.</p>
-                
+                <p id="modal-desc-text" class="text-gray-300 text-lg font-light leading-relaxed">Descripción</p>
                 <div class="bg-black/50 rounded-xl p-6 border border-gray-800">
-                    <h4 class="text-white font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-bolt text-bhGreen"></i> Funciones Clave</h4>
-                    <ul id="modal-bullets" class="space-y-3 text-sm text-gray-400">
+                    <h4 class="text-white font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-bolt text-bhGreen"></i> Funciones incorporadas en el sistema:</h4>
+                    <ul id="modal-bullets-list" class="space-y-3 text-sm text-gray-400">
                         </ul>
                 </div>
             </div>
 
             <div class="p-6 bg-[#0a0a0a] border-t border-gray-800/80 flex justify-end">
-                <a href="https://wa.me/51999888777" class="bg-white text-black hover:bg-gray-200 font-bold px-6 py-3 rounded-xl transition flex items-center gap-2">
-                    Lo quiero para mi taller <i class="fa-solid fa-arrow-right"></i>
+                <a href="https://wa.me/51999888777" class="bg-bhPurple hover:bg-bhPurpleHover text-white font-bold px-6 py-3 rounded-xl transition flex items-center gap-2">
+                    Adquirir este módulo <i class="fa-solid fa-arrow-right"></i>
                 </a>
             </div>
         </div>
     </div>
 
+    <div id="login-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-bhCard border border-gray-800 w-full max-w-md rounded-2xl p-8 relative shadow-2xl">
+            <button onclick="toggleModal('login-modal')" class="absolute top-4 right-4 text-gray-500 hover:text-white transition">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <div class="space-y-6">
+                <div class="text-center">
+                    <h3 class="text-2xl font-bold text-white">Acceso al Panel</h3>
+                    <p class="text-sm text-gray-400 mt-1">Ingresa tus credenciales de administrador</p>
+                </div>
+                <form class="space-y-4" onsubmit="event.preventDefault(); alert('Aquí va tu lógica de Supabase Auth');">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Correo Electrónico</label>
+                        <input type="email" required class="w-full bg-bhDark border border-gray-800 focus:border-bhPurple focus:outline-none rounded-xl px-4 py-3 text-white transition text-sm" placeholder="ejemplo@taller.com">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Contraseña</label>
+                        <input type="password" required class="w-full bg-bhDark border border-gray-800 focus:border-bhPurple focus:outline-none rounded-xl px-4 py-3 text-white transition text-sm" placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="w-full bg-bhPurple hover:bg-bhPurpleHover text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-bhPurple/20 text-sm mt-2">
+                        Entrar al Sistema
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <footer class="bg-bhDark border-t border-gray-900 py-12 text-center text-sm text-gray-600">
-        <p>&copy; 2026 BlackHouse OS. Todos los derechos reservados.</p>
+        <p>&copy; 2026 BlackHouse OS. Todos los derechos reservados. Diseñado para potenciar tu productividad.</p>
     </footer>
 
     <script>
-        // BASE DE DATOS DE TUS FUNCIONES (Sacado de tu código de Electron)
-        const features = [
-            {
-                id: 'recepcion',
-                icon: 'fa-clipboard-check',
+        // Data para alimentar las ventanas explicativas interactivas
+        const modalData = {
+            recepcion: {
+                icon: 'fa-clipboard-list',
                 color: 'bg-indigo-500/20 text-indigo-400',
-                title: 'Recepción 360° con IA',
-                subtitle: 'Ingresos a prueba de balas',
-                desc: 'Olvídate de los malentendidos con los clientes. Crea órdenes súper detalladas en segundos con herramientas diseñadas para blindar tu negocio.',
+                title: 'Recepción Dinámica',
+                subtitle: 'Ingresos Blindados Legal y Técnicamente',
+                desc: 'Optimiza el proceso de entrada de equipos eliminando errores humanos. Captura toda la información crítica desde el primer segundo.',
                 bullets: [
-                    '<strong class="text-white">Diagnóstico IA:</strong> El sistema sugiere posibles fallas mientras el vendedor escribe los síntomas.',
-                    '<strong class="text-white">Evidencia Fotográfica:</strong> Activa la cámara web y captura el estado físico del equipo antes de tocarlo.',
-                    '<strong class="text-white">Firma Digital:</strong> El cliente firma las políticas de garantía directamente en la pantalla o tablet.',
-                    '<strong class="text-white">Ticket WhatsApp:</strong> Genera y envía un ticket digital profesional al WhatsApp del cliente con un clic.'
+                    '<strong>Mapeo de Fallas por IA:</strong> Sugiere diagnósticos preventivos en tiempo real basados en los síntomas redactados.',
+                    '<strong>Evidencias de Cámara Nativas:</strong> Captura fotografías del estado cosmético del dispositivo y guárdalas asociadas a la orden.',
+                    '<strong>Firma Digital de Conformidad:</strong> Panel táctil integrado para que el cliente acepte las condiciones de desarme y términos de garantía.',
+                    '<strong>Integración WhatsApp instantánea:</strong> Genera la orden y copia un enlace de rastreo directo al chat del cliente.'
                 ]
             },
-            {
-                id: 'laboratorio',
-                icon: 'fa-microscope',
+            laboratorio: {
+                icon: 'fa-flask',
                 color: 'bg-purple-500/20 text-purple-400',
                 title: 'Laboratorio Técnico',
-                subtitle: 'Tu quirófano digital',
-                desc: 'Un panel exclusivo para que tus técnicos reparen más rápido y sin errores, centralizando todas las herramientas que necesitan en una sola vista.',
+                subtitle: 'El Quirófano Electrónico Inteligente',
+                desc: 'Una interfaz optimizada para los técnicos de banco y microsoldadura. Centraliza mediciones y esquemáticos sin distracciones.',
                 bullets: [
-                    '<strong class="text-white">Copiloto IA:</strong> Escribe tus mediciones en la bitácora y la IA te sugerirá dónde revisar posibles cortos.',
-                    '<strong class="text-white">Control de Calidad (QC):</strong> Checklist interactivo de cámaras, táctil, señal y sensores antes de entregar el equipo.',
-                    '<strong class="text-white">Herramientas Nativas:</strong> Calculadora de Ley de Ohm y buscador rápido de stock integrados en la mesa de trabajo.',
-                    '<strong class="text-white">Cronómetro:</strong> Mide exactamente cuánto tiempo real toma cada reparación para optimizar costos.'
+                    '<strong>Copiloto IA de Diagnóstico:</strong> Analiza notas de la bitácora técnica y sugiere líneas de voltaje o integrados a revisar.',
+                    '<strong>Checklist de Control de Calidad (QC):</strong> Protocolo obligatorio de validación (táctil, cámaras, wifi, FaceID) previo al cierre.',
+                    '<strong>Calculadora Ley de Ohm Incorporada:</strong> Realiza cálculos de cortocircuito y consumos de amperaje directamente en la herramienta.',
+                    '<strong>Cronómetro Técnico:</strong> Trazabilidad del tiempo invertido por equipo para calcular la rentabilidad real de la mano de obra.'
                 ]
             },
-            {
-                id: 'inventario',
+            inventario: {
                 icon: 'fa-boxes-stacked',
                 color: 'bg-emerald-500/20 text-emerald-400',
-                title: 'Inventario Inteligente',
-                subtitle: 'Control absoluto del stock',
-                desc: 'Deja de perder dinero por no saber qué repuestos tienes. Mantén tu stock sincronizado con las reparaciones diarias de forma automática.',
+                title: 'Inventario Blindado',
+                subtitle: 'Stock en tiempo real sin fugas de repuestos',
+                desc: 'Mantén un control absoluto de tus refacciones, pantallas, integrados y accesorios de alta rotación.',
                 bullets: [
-                    '<strong class="text-white">Carga por IA:</strong> Sube una foto de la factura de tu proveedor y la IA extraerá los productos automáticamente.',
-                    '<strong class="text-white">Calculadora de Ganancias:</strong> Sugiere precios de venta automáticamente asegurando tu margen de rentabilidad (40%+).',
-                    '<strong class="text-white">Descuento Automático:</strong> Los repuestos se descuentan solos cuando una orden de reparación se marca como completada.',
-                    '<strong class="text-white">Alertas:</strong> Avisos visuales cuando te quedas sin pantallas o baterías de alta rotación.'
+                    '<strong>Escaneo de Listas por IA:</strong> Sube una imagen o documento de tu proveedor y la IA cargará las existencias al sistema automáticamente.',
+                    '<strong>Márgenes de Venta Automatizados:</strong> Calcula de forma automática el precio sugerido al público aplicando reglas de ganancia (40%+).',
+                    '<strong>Vinculación Directa a la Reparación:</strong> Selecciona el repuesto desde la orden y descuéntalo del inventario general en tiempo real.',
+                    '<strong>Métricas de Stock Crítico:</strong> Alertas visuales inmediatas cuando queden pocas unidades de refacciones populares.'
                 ]
             },
-            {
-                id: 'facturacion',
-                icon: 'fa-file-invoice-dollar',
-                color: 'bg-blue-500/20 text-blue-400',
-                title: 'Facturación Integrada',
-                subtitle: 'Cuentas claras y profesionales',
-                desc: 'Formaliza tu negocio sin pagar software extra. Emite comprobantes profesionales con cálculo automático de impuestos.',
+            tracking: {
+                icon: 'fa-qrcode',
+                color: 'bg-emerald-500/10 text-bhGreen',
+                title: 'Rastreo por Código QR',
+                subtitle: 'Atención al cliente automatizada 24/7',
+                desc: 'Reduce hasta en un 70% las llamadas y mensajes constantes de clientes preguntando por el estado de sus reparaciones.',
                 bullets: [
-                    '<strong class="text-white">Boletas y Facturas:</strong> Emite documentos con DNI o RUC directamente desde la orden finalizada.',
-                    '<strong class="text-white">Exportación PDF:</strong> Generación instantánea del comprobante en alta calidad con tu logotipo y código QR.',
-                    '<strong class="text-white">Control de Saldos:</strong> Registro automático de adelantos y saldos pendientes por cobrar.',
-                    '<strong class="text-white">Notas de Venta:</strong> Opciones para comprobantes internos no fiscalizados.'
+                    '<strong>Código QR Único por Orden:</strong> Impreso directamente en el ticket del cliente para un escaneo inmediato con el móvil.',
+                    '<strong>Conexión Directa a la Nube:</strong> El cliente consulta de forma transparente el estado real que tú actualizas en tu app de escritorio.',
+                    '<strong>Políticas Row Level Security (RLS):</strong> Acceso totalmente blindado. Tus clientes solo pueden ver su propio estado sin exponer datos sensibles.',
+                    '<strong>Fidelización de Marca:</strong> Una experiencia transparente de nivel premium que eleva el valor percibido de tu taller.'
                 ]
             },
-            {
-                id: 'reportes',
-                icon: 'fa-chart-pie',
+            reportes: {
+                icon: 'fa-chart-line',
                 color: 'bg-pink-500/20 text-pink-400',
                 title: 'Analista Financiero IA',
-                subtitle: 'Métricas para escalar',
-                desc: 'No solo repares, dirige tu empresa. BlackHouse OS procesa tus datos diarios y te entrega estrategias de negocio.',
+                subtitle: 'Métricas Ejecutivas para Dueños de Negocios',
+                desc: 'Transforma datos fríos de transacciones en decisiones inteligentes de negocio a través de modelos analíticos avanzados.',
                 bullets: [
-                    '<strong class="text-white">Resumen Ejecutivo IA:</strong> Un análisis redactado por inteligencia artificial sobre tus ganancias y salud financiera.',
-                    '<strong class="text-white">Dashboard Visual:</strong> Gráficos interactivos de tus ingresos semanales y mensuales.',
-                    '<strong class="text-white">Métricas Clave:</strong> Conoce tu "Ticket Promedio" exacto y qué técnico está siendo más rentable.',
-                    '<strong class="text-white">Cierres de Caja:</strong> Evita descuadres financieros y fugas de capital a fin de mes.'
+                    '<strong>Reportes Ejecutivos Inteligentes:</strong> La IA evalúa la salud financiera del taller y redacta recomendaciones estratégicas semanales.',
+                    '<strong>Monitoreo de KPIs Críticos:</strong> Visualiza en tiempo real ingresos totales, ticket promedio e indicadores de crecimiento.',
+                    '<strong>Rendimiento de Personal:</strong> Analiza qué técnicos resuelven más órdenes y cuáles generan mayor retorno de inversión.',
+                    '<strong>Gráficos de Facturación Interactivos:</strong> Curvas de flujo de caja para identificar días de mayor demanda en el laboratorio.'
                 ]
             },
-            {
-                id: 'crm',
-                icon: 'fa-users-gear',
-                color: 'bg-amber-500/20 text-amber-400',
-                title: 'CRM y Retención',
-                subtitle: 'Haz que tus clientes vuelvan',
-                desc: 'Un cliente recurrente vale oro. Nuestro sistema automatiza el contacto para que tu taller siga generando ingresos con los clientes que ya tienes.',
+            facturacion: {
+                icon: 'fa-file-invoice-dollar',
+                color: 'bg-blue-500/20 text-blue-400',
+                title: 'Caja y Facturación',
+                subtitle: 'Comprobantes Profesionales al Instante',
+                desc: 'Administra transacciones de caja, adelantos y liquidación de servicios con total formalidad y orden estructural.',
                 bullets: [
-                    '<strong class="text-white">Tracking por QR:</strong> El cliente escanea su recibo y ve el estado de su equipo. Cero llamadas molestas preguntando "¿Ya quedó?".',
-                    '<strong class="text-white">Automatización WhatsApp:</strong> Mensajes predeterminados al recibir y al terminar un equipo.',
-                    '<strong class="text-white">Detector de Inactivos:</strong> El panel encuentra automáticamente clientes que no han vuelto en más de 30 días.',
-                    '<strong class="text-white">Promociones Directas:</strong> Envíales una oferta de mantenimiento de un solo clic vía WhatsApp.'
+                    '<strong>Formatos SUNAT Flexibles:</strong> Emisión fluida de Boletas de Venta, Facturas Electrónicas y Notas de Venta Internas.',
+                    '<strong>Matemática Tributaria Automatizada:</strong> Desglose automático de Operaciones Gravadas e I.G.V. (18%) conforme a ley.',
+                    '<strong>Descarga Directa en Alta Calidad:</strong> Generación instantánea de comprobantes imprimibles con logotipos personalizados y códigos QR.',
+                    '<strong>Auditoría de Caja Impecable:</strong> Filtros avanzados por fecha y tipo de comprobante para cierres diarios rápidos.'
                 ]
             }
-        ];
+        };
 
-        // RENDERIZAR LAS TARJETAS DINÁMICAMENTE
-        const grid = document.getElementById('features-grid');
-        features.forEach(f => {
-            grid.innerHTML += `
-                <div onclick="openModal('${f.id}')" class="bg-bhCard border border-gray-800/80 p-8 rounded-2xl hover:border-bhPurple/50 transition-all cursor-pointer group hover:-translate-y-1 hover:shadow-2xl hover:shadow-bhPurple/10">
-                    <div class="w-14 h-14 ${f.color} rounded-2xl flex items-center justify-center mb-6 text-2xl group-hover:scale-110 transition-transform">
-                        <i class="fa-solid ${f.icon}"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-white mb-2">${f.title}</h3>
-                    <p class="text-gray-500 text-sm leading-relaxed mb-6 line-clamp-2">${f.desc}</p>
-                    <div class="text-bhPurple text-sm font-bold flex items-center gap-2 group-hover:gap-3 transition-all">
-                        Explorar módulo <i class="fa-solid fa-arrow-right"></i>
-                    </div>
-                </div>
-            `;
-        });
-
-        // LÓGICA DEL MODAL
-        const modal = document.getElementById('feature-modal');
-        const modalContent = document.getElementById('modal-content-box');
-
-        function openModal(id) {
-            const data = features.find(f => f.id === id);
+        // Funciones de control de modales de características
+        function openFeatureModal(id) {
+            const data = modalData[id];
+            document.getElementById('modal-icon-box').className = `w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-lg ${data.color}`;
+            document.getElementById('modal-icon-box').innerHTML = `<i class="fa-solid ${data.icon}"></i>`;
+            document.getElementById('modal-title-text').innerText = data.title;
+            document.getElementById('modal-subtitle-text').innerText = data.subtitle;
+            document.getElementById('modal-desc-text').innerText = data.desc;
             
-            // Llenar datos
-            document.getElementById('modal-icon').className = `w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-lg ${data.color}`;
-            document.getElementById('modal-icon').innerHTML = `<i class="fa-solid ${data.icon}"></i>`;
-            document.getElementById('modal-title').innerText = data.title;
-            document.getElementById('modal-subtitle').innerText = data.subtitle;
-            document.getElementById('modal-desc').innerText = data.desc;
-            
-            // Llenar bullets
-            document.getElementById('modal-bullets').innerHTML = data.bullets.map(b => 
-                `<li class="flex items-start gap-3"><i class="fa-solid fa-check text-bhGreen mt-1 text-xs"></i> <span>${b}</span></li>`
+            document.getElementById('modal-bullets-list').innerHTML = data.bullets.map(b => 
+                `<li class="flex items-start gap-3"><i class="fa-solid fa-check text-bhGreen mt-1 text-xs"></i><span>${b}</span></li>`
             ).join('');
 
-            // Mostrar modal
-            modal.classList.remove('hidden');
-            // Pequeño delay para la animación de opacidad
-            setTimeout(() => {
-                modal.classList.remove('opacity-0');
-                modal.classList.add('opacity-100');
-            }, 10);
+            const modalExplain = document.getElementById('feature-explain-modal');
+            modalExplain.classList.remove('hidden');
+            modalExplain.classList.add('flex');
         }
 
-        function closeModal() {
-            modal.classList.remove('opacity-100');
-            modal.classList.add('opacity-0');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 300); // Tiempo que dura la transición
+        function closeFeatureModal() {
+            const modalExplain = document.getElementById('feature-explain-modal');
+            modalExplain.classList.add('hidden');
+            modalExplain.classList.remove('flex');
         }
 
-        // Cerrar al hacer clic fuera
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) closeModal();
+        // Cierre al hacer clic fuera del recuadro
+        document.getElementById('feature-explain-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeFeatureModal();
         });
+
+        // Controles de modales estándar (Login)
+        function toggleModal(modalId) {
+            const targetModal = document.getElementById(modalId);
+            targetModal.classList.toggle('hidden');
+        }
     </script>
 </body>
 </html>
