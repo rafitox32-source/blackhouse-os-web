@@ -236,9 +236,9 @@
         <p>&copy; 2026 BlackHouse OS. Todos los derechos reservados. Diseñado para potenciar tu productividad.</p>
     </footer>
 
-    <script>
+   <script>
         // -------------------------------------------------------------
-        // CONEXIÓN CON SUPABASE PARA EL LOGIN WEB
+        // CONEXIÓN CON SUPABASE PARA EL LOGIN WEB (TABLA "usuarios")
         // -------------------------------------------------------------
         
         // ¡REEMPLAZA ESTO POR TUS CLAVES REALES DE SUPABASE!
@@ -247,32 +247,54 @@
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
         async function iniciarSesionWeb() {
-            const email = document.getElementById('web-email').value;
-            const password = document.getElementById('web-pass').value;
+            const usuarioInput = document.getElementById('web-email').value.trim();
+            const passwordInput = document.getElementById('web-pass').value.trim();
             const msgBox = document.getElementById('login-msg');
 
-            msgBox.innerText = "Verificando credenciales...";
+            if (!usuarioInput || !passwordInput) {
+                msgBox.innerText = "Ingresa tu usuario y contraseña.";
+                msgBox.classList.remove('hidden', 'text-bhGreen');
+                msgBox.classList.add('text-red-500');
+                return;
+            }
+
+            msgBox.innerText = "Consultando base de datos...";
             msgBox.classList.remove('hidden', 'text-red-500', 'text-bhGreen');
             msgBox.classList.add('text-bhPurple');
 
-            // Autenticación contra Supabase
-            const { data, error } = await supabaseClient.auth.signInWithPassword({
-                email: email,
-                password: password,
-            });
+            try {
+                // Buscamos directamente en TU tabla "usuarios"
+                const { data, error } = await supabaseClient
+                    .from('usuarios')
+                    .select('*')
+                    .eq('usuario', usuarioInput)
+                    .eq('password', passwordInput)
+                    .single(); // Exige que devuelva exactamente 1 coincidencia
 
-            if (error) {
-                msgBox.innerText = "Correo o contraseña incorrectos.";
+                if (error || !data) {
+                    // Si no lo encuentra o las contraseñas no coinciden
+                    msgBox.innerText = "Usuario o contraseña incorrectos.";
+                    msgBox.classList.remove('text-bhPurple');
+                    msgBox.classList.add('text-red-500');
+                } else {
+                    // ¡Login exitoso!
+                    msgBox.innerText = `¡Bienvenido ${data.usuario}! Entrando...`;
+                    msgBox.classList.remove('text-red-500', 'text-bhPurple');
+                    msgBox.classList.add('text-bhGreen');
+                    
+                    // Guardamos quién inició sesión para que panel.html lo sepa
+                    localStorage.setItem('web_user', data.usuario);
+                    localStorage.setItem('web_rol', data.rol);
+                    
+                    setTimeout(() => {
+                        window.location.href = 'panel.html';
+                    }, 800);
+                }
+            } catch (err) {
+                console.error("Error en login:", err);
+                msgBox.innerText = "Error de conexión con el servidor.";
                 msgBox.classList.remove('text-bhPurple');
                 msgBox.classList.add('text-red-500');
-            } else {
-                msgBox.innerText = "¡Acceso concedido! Entrando...";
-                msgBox.classList.remove('text-red-500', 'text-bhPurple');
-                msgBox.classList.add('text-bhGreen');
-                
-                setTimeout(() => {
-                    window.location.href = 'panel.html';
-                }, 800);
             }
         }
 
@@ -392,5 +414,3 @@
             targetModal.classList.toggle('hidden');
         }
     </script>
-</body>
-</html>
