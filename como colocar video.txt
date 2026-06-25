@@ -1,0 +1,3 @@
+El Enlace Embed: Cuando subas tu video final a YouTube, no pegues el enlace normal del navegador. Dale clic derecho al video en YouTube, elige "Copiar código de inserción" y de ahí extraes únicamente el enlace que empieza con [https://www.youtube.com/embed/](https://www.youtube.com/embed/)... para reemplazar el src temporal que te dejé ahí.
+
+El Botón CTA: El enlace de WhatsApp incluye un mensaje predeterminado ("Hola, acabo de ver el video demo...") para que, en cuanto te escriban, sepas exactamente qué los convenció de contactarte.
