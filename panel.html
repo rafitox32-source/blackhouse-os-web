@@ -166,34 +166,7 @@
                                         <th class="pb-3 px-2 text-right">Rendimiento (Hoy)</th>
                                     </tr>
                                 </thead>
-                                <tbody class="text-sm text-gray-300 divide-y divide-gray-800/50">
-                                    <tr class="hover:bg-white/5 transition">
-                                        <td class="py-4 px-2 flex items-center gap-3">
-                                            <div class="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-xs">👨‍🔧</div>
-                                            <span class="font-bold text-white">Carlos Ramos (Técnico)</span>
-                                        </td>
-                                        <td class="py-4 px-2 font-mono text-gray-400">08:55 AM</td>
-                                        <td class="py-4 px-2"><span class="bg-bhGreen/10 text-bhGreen text-xs font-bold px-2 py-1 rounded-full"><i class="fa-solid fa-circle text-[8px] mr-1"></i> En Laboratorio</span></td>
-                                        <td class="py-4 px-2 text-right"><span class="text-white font-bold">4</span> reparados</td>
-                                    </tr>
-                                    <tr class="hover:bg-white/5 transition">
-                                        <td class="py-4 px-2 flex items-center gap-3">
-                                            <div class="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-xs">👩‍💻</div>
-                                            <span class="font-bold text-white">María López (Ventas)</span>
-                                        </td>
-                                        <td class="py-4 px-2 font-mono text-gray-400">09:02 AM</td>
-                                        <td class="py-4 px-2"><span class="bg-bhGreen/10 text-bhGreen text-xs font-bold px-2 py-1 rounded-full"><i class="fa-solid fa-circle text-[8px] mr-1"></i> En Recepción</span></td>
-                                        <td class="py-4 px-2 text-right"><span class="text-white font-bold">8</span> recibidos</td>
-                                    </tr>
-                                    <tr class="hover:bg-white/5 transition opacity-60">
-                                        <td class="py-4 px-2 flex items-center gap-3">
-                                            <div class="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-xs">👨‍🔧</div>
-                                            <span class="font-bold text-gray-400">Luis Fernández</span>
-                                        </td>
-                                        <td class="py-4 px-2 font-mono text-gray-600">--:--</td>
-                                        <td class="py-4 px-2"><span class="bg-red-500/10 text-red-500 text-xs font-bold px-2 py-1 rounded-full"><i class="fa-solid fa-circle text-[8px] mr-1"></i> Ausente</span></td>
-                                        <td class="py-4 px-2 text-right text-gray-600">-</td>
-                                    </tr>
+                              <tbody id="asistencia-tbody" class="text-sm text-gray-300 divide-y divide-gray-800/50">
                                 </tbody>
                             </table>
                         </div>
@@ -382,6 +355,19 @@
 
     <!-- SCRIPT DE CONTROL E INTERACTIVIDAD -->
     <script>
+// --- GUARDIA DE SEGURIDAD: Solo Dueños ---
+function verificarAccesoDueno() {
+    const rol = localStorage.getItem('web_rol'); // El rol que guardamos al hacer login
+    
+    // Si el usuario no es 'dueño', lo expulsamos de la web
+    if (rol !== 'dueno') {
+        alert("Acceso denegado: Esta plataforma es exclusiva para administradores.");
+        localStorage.clear(); // Limpiamos la sesión por seguridad
+        window.location.href = 'index.html'; // Lo enviamos de vuelta al login
+    }
+}
+verificarAccesoDueno();
+
         // Fecha para la tarjeta de asistencia
         const options = { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' };
         document.getElementById('current-date').innerText = new Date().toLocaleDateString('es-ES', options).toUpperCase();
@@ -486,7 +472,42 @@ async function cargarAgendaReal() {
                         x: { grid: { display: false }, ticks: { color: '#6b7280' } }
                     }
                 }
-            });
+            });async function cargarAsistenciaReal() {
+    const tbody = document.getElementById('asistencia-tbody');
+    if (!tbody) return;
+
+    try {
+        // Consultamos la tabla 'asistencia'
+        const { data, error } = await supabaseClient
+            .from('asistencia')
+            .select('usuario, hora_entrada, estado')
+            .order('hora_entrada', { ascending: false });
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            tbody.innerHTML = data.map(item => `
+                <tr class="hover:bg-white/5 transition">
+                    <td class="py-4 px-2 font-bold text-white">${item.usuario}</td>
+                    <td class="py-4 px-2 font-mono text-gray-400">${item.hora_entrada}</td>
+                    <td class="py-4 px-2">
+                        <span class="${item.estado === 'Presente' ? 'bg-bhGreen/10 text-bhGreen' : 'bg-red-500/10 text-red-500'} text-xs font-bold px-2 py-1 rounded-full">
+                            ${item.estado}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    } catch (err) {
+        console.error("Error cargando asistencia:", err);
+    }
+}
+
+// Ejecutar al cargar la página
+document.addEventListener('DOMContentLoaded', () => {
+    cargarAgendaReal();
+    cargarAsistenciaReal(); // <--- Agregamos esta nueva función aquí
+});
         };
     </script>
 </body>
