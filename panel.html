@@ -683,12 +683,14 @@ async function cargarGraficaReal() {
         gradient.addColorStop(0, 'rgba(124, 58, 237, 0.5)'); 
         gradient.addColorStop(1, 'rgba(124, 58, 237, 0)');   
 
-        // Si ya existe una gráfica previa, la destruimos para no encimar datos
-        if (window.miGrafica) {
-            window.miGrafica.destroy();
+        // Buscamos si ya hay una gráfica dibujada en ese canvas y la destruimos
+        const chartStatus = Chart.getChart("financeChart");
+        if (chartStatus != undefined) {
+            chartStatus.destroy();
         }
 
-        window.miGrafica = new Chart(ctx, {
+        // Ahora sí, creamos la gráfica limpia
+        new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels, // Nombres de los días dinámicos
