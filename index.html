@@ -89,110 +89,247 @@
         </div>
     </section>
 
-  <!-- ========================================================= -->
-    <!-- SECCIÓN DE ESTADÍSTICAS ANIMADAS (ANTI-SPAM VISUAL)       -->
-    <!-- ========================================================= -->
-    <section id="stats-section" class="relative bg-[#050505] border-y border-white/[0.06] py-16 overflow-hidden">
-        <!-- Resplandor ambiental de fondo sutil para mantener el estilo Dark/Neon -->
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2/3 h-24 bg-[#7c3aed]/10 blur-[100px] rounded-full pointer-events-none"></div>
+   <section id="stats-section" class="relative bg-[#050505] border-y border-white/[0.06] py-16 overflow-hidden">
+    
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2/3 h-24 bg-[#7c3aed]/10 blur-[100px] rounded-full pointer-events-none"></div>
 
-        <div class="max-w-7xl mx-auto px-6 relative z-10">
-            <!-- Grid: Vertical en móvil, horizontal con líneas divisorias a partir de pantallas grandes (lg) -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-12 lg:gap-y-0 lg:divide-x lg:divide-white/[0.08] text-center">
+    <div class="max-w-7xl mx-auto px-6 relative z-10">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-12 lg:gap-y-0 lg:divide-x lg:divide-white/[0.08] text-center">
+            
+            <div class="flex flex-col items-center justify-center px-4 transition-transform duration-500 hover:translate-y-[-2px]">
+                <span class="text-4xl lg:text-5xl font-black tracking-tight text-white mb-2 font-sans select-none">
+                    <span class="stat-counter text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300" data-target="120">0</span><span class="text-[#7c3aed] ml-0.5">+</span>
+                </span>
+                <span class="text-xs font-bold uppercase tracking-widest text-gray-400">Talleres Activos</span>
+            </div>
+
+            <div class="flex flex-col items-center justify-center px-4 transition-transform duration-500 hover:translate-y-[-2px]">
+                <span class="text-4xl lg:text-5xl font-black tracking-tight text-white mb-2 font-sans select-none">
+                    <span class="text-[#10b981] mr-1">S/</span><span class="stat-counter text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300" data-target="2">0</span><span class="text-[#7c3aed] ml-0.5">M+</span>
+                </span>
+                <span class="text-xs font-bold uppercase tracking-widest text-gray-400">Ingresos Gestionados</span>
+            </div>
+
+            <div class="flex flex-col items-center justify-center px-4 transition-transform duration-500 hover:translate-y-[-2px]">
+                <span class="text-4xl lg:text-5xl font-black tracking-tight text-white mb-2 font-sans select-none">
+                    <span class="stat-counter text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300" data-target="98">0</span><span class="text-[#7c3aed] ml-0.5">%</span>
+                </span>
+                <span class="text-xs font-bold uppercase tracking-widest text-gray-400">Clientes Satisfechos</span>
+            </div>
+
+            <div class="flex flex-col items-center justify-center px-4 transition-transform duration-500 hover:translate-y-[-2px]">
+                <span class="text-4xl lg:text-5xl font-black tracking-tight text-white mb-2 font-sans select-none">
+                    <span class="stat-counter text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300" data-target="24">0</span><span class="text-[#7c3aed] font-light">/7</span>
+                </span>
+                <span class="text-xs font-bold uppercase tracking-widest text-gray-400">Horas de Soporte</span>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const statsSection = document.getElementById('stats-section');
+        const counters = document.querySelectorAll('.stat-counter');
+        const animationDuration = 1800; // Tiempo total de la animación en milisegundos (1.8s)
+
+        // Función encargada de la animación matemática fluida
+        const iniciarAnimacionContadores = () => {
+            counters.forEach(counter => {
+                const targetValue = parseInt(counter.getAttribute('data-target'), 10);
+                const startTime = performance.now();
+
+                const actualizarNumero = (currentTime) => {
+                    const elapsedTime = currentTime - startTime;
+                    const progress = Math.min(elapsedTime / animationDuration, 1);
+                    
+                    // Función polinómica easeOutQuad para desacelerar cerca del final de forma natural
+                    const easeProgress = progress * (2 - progress);
+                    
+                    const valueNow = Math.floor(easeProgress * targetValue);
+                    counter.innerText = valueNow;
+
+                    if (progress < 1) {
+                        requestAnimationFrame(actualizarNumero);
+                    } else {
+                        counter.innerText = targetValue; // Garantiza que termine en el entero exacto
+                    }
+                };
+
+                requestAnimationFrame(actualizarNumero);
+            });
+        };
+
+        // Configuración del observador para detectar el scroll del usuario
+        const observerOptions = {
+            root: null, // Lee el viewport del navegador
+            threshold: 0.4 // Arranca la animación cuando el 40% de la sección es visible en pantalla
+        };
+
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    iniciarAnimacionContadores();
+                    observer.disconnect(); // Desconecta el sensor para que la animación ocurra una sola vez
+                }
+            });
+        }, observerOptions);
+
+        if (statsSection) {
+            observer.observe(statsSection);
+        }
+    });
+</script>
+   
+    <section id="caracteristicas" class="py-20 border-t border-gray-900 bg-black/40">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center max-w-3xl mx-auto space-y-4 mb-16">
+                <h2 class="text-3xl md:text-4xl font-extrabold text-white tracking-tight">Todo lo que necesitas para dominar el mercado</h2>
+                <p class="text-gray-400">Haz clic sobre cualquiera de los módulos para abrir los detalles técnicos y ver su funcionamiento.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 
-                <!-- Contador 1: Talleres Activos -->
-                <div class="flex flex-col items-center justify-center px-4 transition-transform duration-500 hover:translate-y-[-2px]">
-                    <span class="text-4xl lg:text-5xl font-black tracking-tight text-white mb-2 font-sans select-none">
-                        <span class="stat-counter text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300" data-target="120">0</span><span class="text-[#7c3aed] ml-0.5">+</span>
-                    </span>
-                    <span class="text-xs font-bold uppercase tracking-widest text-gray-400">Talleres Activos</span>
+                <div onclick="openFeatureModal('recepcion')" class="bg-bhCard border border-gray-800/60 p-8 rounded-2xl hover:border-bhPurple/50 transition-all group cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:shadow-bhPurple/5">
+                    <div class="w-12 h-12 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-6 font-bold text-xl group-hover:bg-bhPurple group-hover:text-white transition-all">
+                        <i class="fa-solid fa-clipboard-list"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Recepción Dinámica</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4">Registra equipos en segundos. Captura fallas visuales, datos del cliente y genera hojas de ingreso automáticas.</p>
+                    <span class="text-xs font-bold text-bhPurple flex items-center gap-1 group-hover:gap-2 transition-all">Ver detalles e IA <i class="fa-solid fa-arrow-right"></i></span>
                 </div>
 
-                <!-- Contador 2: Ingresos Gestionados -->
-                <div class="flex flex-col items-center justify-center px-4 transition-transform duration-500 hover:translate-y-[-2px]">
-                    <span class="text-4xl lg:text-5xl font-black tracking-tight text-white mb-2 font-sans select-none">
-                        <span class="text-[#10b981] mr-1">S/</span><span class="stat-counter text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300" data-target="2">0</span><span class="text-[#7c3aed] ml-0.5">M+</span>
-                    </span>
-                    <span class="text-xs font-bold uppercase tracking-widest text-gray-400">Ingresos Gestionados</span>
+                <div onclick="openFeatureModal('laboratorio')" class="bg-bhCard border border-gray-800/60 p-8 rounded-2xl hover:border-bhPurple/50 transition-all group cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:shadow-bhPurple/5">
+                    <div class="w-12 h-12 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-6 font-bold text-xl group-hover:bg-bhPurple group-hover:text-white transition-all">
+                        <i class="fa-solid fa-flask"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Laboratorio Técnico</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4">Asigna prioridades, técnicos responsables y lleva una trazabilidad quirúrgica de cada reparación en curso.</p>
+                    <span class="text-xs font-bold text-bhPurple flex items-center gap-1 group-hover:gap-2 transition-all">Ver herramientas <i class="fa-solid fa-arrow-right"></i></span>
                 </div>
 
-                <!-- Contador 3: Clientes Satisfechos -->
-                <div class="flex flex-col items-center justify-center px-4 transition-transform duration-500 hover:translate-y-[-2px]">
-                    <span class="text-4xl lg:text-5xl font-black tracking-tight text-white mb-2 font-sans select-none">
-                        <span class="stat-counter text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300" data-target="98">0</span><span class="text-[#7c3aed] ml-0.5">%</span>
-                    </span>
-                    <span class="text-xs font-bold uppercase tracking-widest text-gray-400">Clientes Satisfechos</span>
+                <div onclick="openFeatureModal('inventario')" class="bg-bhCard border border-gray-800/60 p-8 rounded-2xl hover:border-bhPurple/50 transition-all group cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:shadow-bhPurple/5">
+                    <div class="w-12 h-12 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-6 font-bold text-xl group-hover:bg-bhPurple group-hover:text-white transition-all">
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Inventario Blindado</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4">Alerta de stock bajo para pantallas, baterías y flexores. Vincula repuestos directamente al costo de la orden.</p>
+                    <span class="text-xs font-bold text-bhPurple flex items-center gap-1 group-hover:gap-2 transition-all">Ver carga inteligente <i class="fa-solid fa-arrow-right"></i></span>
                 </div>
 
-                <!-- Contador 4: Horas de Soporte -->
-                <div class="flex flex-col items-center justify-center px-4 transition-transform duration-500 hover:translate-y-[-2px]">
-                    <span class="text-4xl lg:text-5xl font-black tracking-tight text-white mb-2 font-sans select-none">
-                        <span class="stat-counter text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300" data-target="24">0</span><span class="text-[#7c3aed] font-light">/7</span>
-                    </span>
-                    <span class="text-xs font-bold uppercase tracking-widest text-gray-400">Horas de Soporte</span>
+                <div onclick="openFeatureModal('tracking')" class="bg-bhCard border border-gray-800/60 p-8 rounded-2xl hover:border-bhGreen/50 transition-all group cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:shadow-bhGreen/5">
+                    <div class="w-12 h-12 bg-bhGreen/10 text-bhGreen rounded-xl flex items-center justify-center mb-6 font-bold text-xl group-hover:bg-bhGreen group-hover:text-white transition-all">
+                        <i class="fa-solid fa-qrcode"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Rastreo por Código QR</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4">Tus clientes escanean el ticket y ven el estado en tiempo real. Reduce en un 70% las llamadas molestas preguntando "¿Ya quedó?".</p>
+                    <span class="text-xs font-bold text-bhGreen flex items-center gap-1 group-hover:gap-2 transition-all">Ver cómo funciona <i class="fa-solid fa-arrow-right"></i></span>
                 </div>
 
+                <div onclick="openFeatureModal('reportes')" class="bg-bhCard border border-gray-800/60 p-8 rounded-2xl hover:border-bhPurple/50 transition-all group cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:shadow-bhPurple/5">
+                    <div class="w-12 h-12 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-6 font-bold text-xl group-hover:bg-bhPurple group-hover:text-white transition-all">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Analista Financiero IA</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4">Análisis predictivo de tus ganancias y métricas de rendimiento por empleado para tomar decisiones estratégicas.</p>
+                    <span class="text-xs font-bold text-bhPurple flex items-center gap-1 group-hover:gap-2 transition-all">Ver reportes IA <i class="fa-solid fa-arrow-right"></i></span>
+                </div>
+
+                <div onclick="openFeatureModal('facturacion')" class="bg-bhCard border border-gray-800/60 p-8 rounded-2xl hover:border-bhPurple/50 transition-all group cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:shadow-bhPurple/5">
+                    <div class="w-12 h-12 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-6 font-bold text-xl group-hover:bg-bhPurple group-hover:text-white transition-all">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Caja y Facturación</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4">Control total de ingresos, adelantos, cuentas por cobrar, emisión de comprobantes y cierres de caja limpios.</p>
+                    <span class="text-xs font-bold text-bhPurple flex items-center gap-1 group-hover:gap-2 transition-all">Ver módulos SUNAT <i class="fa-solid fa-arrow-right"></i></span>
+                </div>
             </div>
         </div>
     </section>
 
-    <!-- ========================================================= -->
-    <!-- LÓGICA JAVASCRIPT: INTERSECTION OBSERVER + ANIMACIÓN      -->
-    <!-- ========================================================= -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const statsSection = document.getElementById('stats-section');
-            const counters = document.querySelectorAll('.stat-counter');
-            const animationDuration = 1800; // Tiempo total de la animación en milisegundos (1.8s)
+    <section id="enganche" class="py-20 relative overflow-hidden">
+        <div class="max-w-5xl mx-auto px-6 text-center space-y-8 relative z-10">
+            <h2 class="text-3xl md:text-5xl font-black text-white">¿Cuánto dinero estás perdiendo hoy por falta de control?</h2>
+            <p class="text-gray-400 text-lg md:text-xl max-w-3xl mx-auto font-light leading-relaxed">
+                El desorden aleja a los clientes premium. Con <span class="text-white font-bold">BlackHouse OS</span>, ofreces una experiencia transparente, automatizas las tareas tediosas y recuperas el control total de tu negocio desde cualquier lugar.
+            </p>
+            <div class="pt-6">
+                <a href="https://wa.me/51999888777" class="inline-flex items-center space-x-3 bg-gradient-to-r from-bhPurple to-indigo-600 hover:from-bhPurpleHover hover:to-indigo-700 text-white font-extrabold px-10 py-5 rounded-2xl transition transform hover:-translate-y-1 shadow-2xl shadow-bhPurple/40 text-xl">
+                    <span>Quiero Digitalizar mi Taller Ahora</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+        <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-2/3 h-px bg-gradient-to-r from-transparent via-bhPurple/40 to-transparent"></div>
+    </section>
 
-            // Función encargada de la animación matemática fluida
-            const iniciarAnimacionContadores = () => {
-                counters.forEach(counter => {
-                    const targetValue = parseInt(counter.getAttribute('data-target'), 10);
-                    const startTime = performance.now();
+    <div id="feature-explain-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        
+        <div class="bg-[#111] border border-gray-800 w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl relative shadow-2xl overflow-hidden modal-animated">
+            
+            <button onclick="closeFeatureModal()" class="absolute top-4 right-4 text-gray-500 hover:text-white transition bg-black/50 p-2 rounded-full w-10 h-10 flex items-center justify-center z-10">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
 
-                    const actualizarNumero = (currentTime) => {
-                        const elapsedTime = currentTime - startTime;
-                        const progress = Math.min(elapsedTime / animationDuration, 1);
-                        
-                        // Función polinómica easeOutQuad para desacelerar cerca del final de forma natural
-                        const easeProgress = progress * (2 - progress);
-                        
-                        const valueNow = Math.floor(easeProgress * targetValue);
-                        counter.innerText = valueNow;
+            <div class="p-6 md:p-8 pb-4 md:pb-6 shrink-0 border-b border-gray-800/50 bg-gradient-to-b from-gray-800/20 to-transparent">
+                <div id="modal-icon-box" class="w-12 h-12 md:w-16 md:h-16 rounded-2xl flex items-center justify-center text-2xl md:text-3xl mb-4 md:mb-6 shadow-lg"></div>
+                <h3 id="modal-title-text" class="text-2xl md:text-3xl font-black text-white mb-1 md:mb-2">Título</h3>
+                <p id="modal-subtitle-text" class="text-bhPurple font-semibold text-xs md:text-sm uppercase tracking-wider">Subtítulo</p>
+            </div>
 
-                        if (progress < 1) {
-                            requestAnimationFrame(actualizarNumero);
-                        } else {
-                            counter.innerText = targetValue; // Garantiza que termine en el entero exacto
-                        }
-                    };
+            <div class="p-6 md:p-8 space-y-4 md:space-y-6 overflow-y-auto">
+                <p id="modal-desc-text" class="text-gray-300 text-base md:text-lg font-light leading-relaxed">Descripción</p>
+                <div class="bg-black/50 rounded-xl p-4 md:p-6 border border-gray-800">
+                    <h4 class="text-white font-bold mb-3 md:mb-4 flex items-center gap-2"><i class="fa-solid fa-bolt text-bhGreen"></i> Funciones incorporadas en el sistema:</h4>
+                    <ul id="modal-bullets-list" class="space-y-2 md:space-y-3 text-sm text-gray-400">
+                        </ul>
+                </div>
+            </div>
 
-                    requestAnimationFrame(actualizarNumero);
-                });
-            };
+            <div class="p-4 md:p-6 shrink-0 bg-[#0a0a0a] border-t border-gray-800/80 flex justify-end">
+                <a href="https://wa.me/51999888777" class="bg-bhPurple hover:bg-bhPurpleHover text-white font-bold px-5 py-3 rounded-xl transition flex items-center gap-2 text-sm md:text-base">
+                    Adquirir este módulo <i class="fa-solid fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
 
-            // Configuración del observador para detectar el scroll del usuario
-            const observerOptions = {
-                root: null, // Lee el viewport del navegador
-                threshold: 0.4 // Arranca la animación cuando el 40% de la sección es visible en pantalla
-            };
+    <div id="login-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-bhCard border border-gray-800 w-full max-w-md rounded-2xl p-8 relative shadow-2xl">
+            <button onclick="toggleModal('login-modal')" class="absolute top-4 right-4 text-gray-500 hover:text-white transition">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <div class="space-y-6">
+                <div class="text-center">
+                    <h3 class="text-2xl font-bold text-white">Acceso al Panel</h3>
+                    <p class="text-sm text-gray-400 mt-1">Ingresa tus credenciales de administrador</p>
+                </div>
+                <form class="space-y-4" onsubmit="event.preventDefault(); iniciarSesionWeb();">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Correo Electrónico / Usuario</label>
+                       <input type="text" id="web-email" required class="w-full bg-bhDark border border-gray-800 focus:border-bhPurple focus:outline-none rounded-xl px-4 py-3 text-white transition text-sm" placeholder="Usuario o Correo">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Contraseña</label>
+                        <input type="password" id="web-pass" required class="w-full bg-bhDark border border-gray-800 focus:border-bhPurple focus:outline-none rounded-xl px-4 py-3 text-white transition text-sm" placeholder="••••••••">
+                    </div>
+                    
+                    <p id="login-msg" class="text-sm font-bold text-center hidden"></p>
+                    
+                    <button type="submit" class="w-full bg-bhPurple hover:bg-bhPurpleHover text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-bhPurple/20 text-sm mt-2">
+                        Entrar al Sistema
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
 
-            const observer = new IntersectionObserver((entries, observer) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        iniciarAnimacionContadores();
-                        observer.disconnect(); // Desconecta el sensor para que la animación ocurra una sola vez
-                    }
-                });
-            }, observerOptions);
+    <footer class="bg-bhDark border-t border-gray-900 py-12 text-center text-sm text-gray-600">
+        <p>&copy; 2026 BlackHouse OS. Todos los derechos reservados. Diseñado para potenciar tu productividad.</p>
+    </footer>
 
-            if (statsSection) {
-                observer.observe(statsSection);
-            }
-        });
-    </script>
-     <script>
+   <script>
         // -------------------------------------------------------------
         // CONEXIÓN CON SUPABASE PARA EL LOGIN WEB (TABLA "usuarios")
         // -------------------------------------------------------------
