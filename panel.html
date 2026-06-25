@@ -386,6 +386,40 @@
         const options = { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' };
         document.getElementById('current-date').innerText = new Date().toLocaleDateString('es-ES', options).toUpperCase();
 
+        // 1. Conexión (esto faltaba en tu panel.html)
+const supabaseUrl = 'https://flfhpffslhjcuvhxsnjz.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsZmhwZmZzbGhqY3V2aHhzbmp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4Mzg0MDMsImV4cCI6MjA4NDQxNDQwM30.9AxJDLzH2f5jJxAarw5dc1DMuvDlFY2sAr6zJBNUsFc';
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+// 2. Función de agenda que conectamos a la tabla 'ordenes'
+async function cargarAgendaReal() {
+    const listaAgenda = document.getElementById('lista-agenda-id');
+    if (!listaAgenda) return; 
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('ordenes')
+           .select('cliente, modelo, fecha_cita') // Ajustado a tus nombres de columnas reales
+            .order('created_at', { ascending: false })
+            .limit(5);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            listaAgenda.innerHTML = data.map(item => `
+                <li class="p-3 bg-gray-800 rounded-lg mb-2 border-l-4 border-bhPurple">
+                    <div class="flex justify-between">
+                        <span class="font-bold text-white">${item.cliente}</span>
+                        <span class="text-xs text-gray-400">${item.fecha_cita ? item.fecha_cita.substring(0, 10) : 'Sin fecha'}</span>
+                    </div>
+                    <p class="text-sm text-gray-300">${item.modelo}</p>
+                </li>
+            `).join('');
+        }
+    } catch (err) {
+        console.error("Error:", err);
+    }
+}
         // Función para cambiar entre las vistas (Pestañas)
         function switchTab(tabId, element) {
             // 1. Ocultar todas las vistas
