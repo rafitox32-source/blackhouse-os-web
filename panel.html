@@ -177,7 +177,7 @@
                         <div class="p-6 border-b border-gray-800/50">
                             <h2 class="text-lg font-bold text-white flex items-center gap-2"><i class="fa-solid fa-tower-broadcast text-blue-400"></i> Feed de Taller</h2>
                         </div>
-                        <div class="p-6 flex-1 overflow-y-auto space-y-5">
+                       <div id="feed-container" class="p-6 flex-1 overflow-y-auto space-y-5">
                             <div class="flex gap-3">
                                 <div class="mt-1 w-2 h-2 rounded-full bg-bhGreen shadow-[0_0_8px_#10b981] shrink-0"></div>
                                 <div><p class="text-sm text-gray-300"><strong class="text-white">Carlos</strong> finalizó la orden <span class="text-bhPurple">#0102</span>.</p><p class="text-xs text-gray-500 mt-1 font-mono">Hace 2 min</p></div>
@@ -509,6 +509,32 @@ document.addEventListener('DOMContentLoaded', () => {
     cargarAsistenciaReal(); // <--- Agregamos esta nueva función aquí
 });
         };
+
+// --- SCRIPT PARA FEED EN TIEMPO REAL ---
+supabase
+  .channel('feed-realtime')
+  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'feed_taller' }, payload => {
+    
+    const container = document.getElementById('feed-container');
+    // Usamos el mismo diseño que ya tenías en tu HTML
+    const nuevoMensaje = `
+        <div class="flex gap-3" style="animation: fadeIn 0.5s;">
+            <div class="mt-1 w-2 h-2 rounded-full bg-bhGreen shadow-[0_0_8px_#10b981] shrink-0"></div>
+            <div>
+                <p class="text-sm text-gray-300">
+                    <strong class="text-white">${payload.new.usuario}</strong> ${payload.new.mensaje}
+                </p>
+                <p class="text-xs text-gray-500 mt-1 font-mono">Hace un momento</p>
+            </div>
+        </div>
+    `;
+    
+    // insertAdjacentHTML añade el nuevo mensaje al principio de la lista
+    if (container) {
+        container.insertAdjacentHTML('afterbegin', nuevoMensaje);
+    }
+  })
+  .subscribe();
     </script>
 </body>
 </html>
