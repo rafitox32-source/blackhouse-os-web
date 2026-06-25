@@ -108,51 +108,51 @@
             <div id="view-dashboard" class="view-panel active space-y-6">
                 <!-- ROW 1: KPIs PRINCIPALES -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                    <div class="bg-bhCard border border-gray-800 p-6 rounded-2xl shadow-xl">
-                        <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Ingresos Hoy</p>
-                                <h3 class="text-3xl font-black text-white mt-1">S/ 1,240<span class="text-sm text-gray-500 font-medium">.00</span></h3>
-                            </div>
-                            <div class="w-10 h-10 rounded-xl bg-bhGreen/10 text-bhGreen flex items-center justify-center text-lg"><i class="fa-solid fa-sack-dollar"></i></div>
-                        </div>
-                        <p class="text-xs text-bhGreen font-bold flex items-center gap-1"><i class="fa-solid fa-arrow-trend-up"></i> +15% que ayer</p>
-                    </div>
+    <div class="bg-bhCard border border-gray-800 p-6 rounded-2xl shadow-xl">
+        <div class="flex justify-between items-start mb-4">
+            <div>
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Ingresos Hoy</p>
+                <h3 class="text-3xl font-black text-white mt-1" id="kpi-ingresos">S/ 0.00</h3>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-bhGreen/10 text-bhGreen flex items-center justify-center text-lg"><i class="fa-solid fa-sack-dollar"></i></div>
+        </div>
+        <p class="text-xs text-bhGreen font-bold flex items-center gap-1"><i class="fa-solid fa-arrow-trend-up"></i> +15% que ayer</p>
+    </div>
 
-                    <div class="bg-bhCard border border-gray-800 p-6 rounded-2xl shadow-xl">
-                        <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Flujo de Equipos</p>
-                                <h3 class="text-3xl font-black text-white mt-1">12 <span class="text-lg text-gray-500 font-normal">/ 8</span></h3>
-                            </div>
-                            <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-lg"><i class="fa-solid fa-mobile-screen"></i></div>
-                        </div>
-                        <p class="text-xs text-gray-400">12 Entregados / 8 Recibidos hoy</p>
-                    </div>
+    <div class="bg-bhCard border border-gray-800 p-6 rounded-2xl shadow-xl">
+        <div class="flex justify-between items-start mb-4">
+            <div>
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Flujo de Equipos</p>
+                <h3 class="text-3xl font-black text-white mt-1" id="kpi-flujo">0 <span class="text-lg text-gray-500 font-normal">/ 0</span></h3>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-lg"><i class="fa-solid fa-mobile-screen"></i></div>
+        </div>
+        <p class="text-xs text-gray-400">Entregados / Recibidos hoy</p>
+    </div>
 
-                    <div class="bg-bhCard border border-gray-800 p-6 rounded-2xl shadow-xl relative overflow-hidden">
-                        <div class="flex justify-between items-start mb-4 relative z-10">
-                            <div>
-                                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Equipos Listos</p>
-                                <h3 class="text-3xl font-black text-white mt-1">5</h3>
-                            </div>
-                            <div class="w-10 h-10 rounded-xl bg-bhPurple/10 text-bhPurple flex items-center justify-center text-lg"><i class="fa-solid fa-box-open"></i></div>
-                        </div>
-                        <p class="text-xs text-gray-400 relative z-10">Esperando recojo del cliente</p>
-                        <div class="absolute bottom-0 left-0 h-1 bg-bhPurple w-3/4"></div>
-                    </div>
+    <div class="bg-bhCard border border-gray-800 p-6 rounded-2xl shadow-xl relative overflow-hidden">
+        <div class="flex justify-between items-start mb-4 relative z-10">
+            <div>
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Equipos Listos</p>
+                <h3 class="text-3xl font-black text-white mt-1" id="kpi-listos">0</h3>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-bhPurple/10 text-bhPurple flex items-center justify-center text-lg"><i class="fa-solid fa-box-open"></i></div>
+        </div>
+        <p class="text-xs text-gray-400 relative z-10">Esperando recojo del cliente</p>
+        <div class="absolute bottom-0 left-0 h-1 bg-bhPurple w-3/4"></div>
+    </div>
 
-                    <div class="bg-bhCard border border-gray-800 p-6 rounded-2xl shadow-xl">
-                        <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Ticket Promedio</p>
-                                <h3 class="text-3xl font-black text-white mt-1">S/ 103<span class="text-sm text-gray-500 font-medium">.30</span></h3>
-                            </div>
-                            <div class="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-400 flex items-center justify-center text-lg"><i class="fa-solid fa-receipt"></i></div>
-                        </div>
-                        <p class="text-xs text-gray-400">Por orden completada</p>
-                    </div>
-                </div>
+    <div class="bg-bhCard border border-gray-800 p-6 rounded-2xl shadow-xl">
+        <div class="flex justify-between items-start mb-4">
+            <div>
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Ticket Promedio</p>
+                <h3 class="text-3xl font-black text-white mt-1" id="kpi-ticket">S/ 0.00</h3>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-400 flex items-center justify-center text-lg"><i class="fa-solid fa-receipt"></i></div>
+        </div>
+        <p class="text-xs text-gray-400">Por orden completada</p>
+    </div>
+</div>
 
                 <!-- ROW 2: ASISTENCIA Y GRÁFICAS -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -509,6 +509,8 @@
             cargarAgendaReal();
             cargarAsistenciaReal();
             cargarFeedHistorial();
+            cargarKPIs();
+            cargarGraficaReal();
         };
 
         // --- SUSCRIPCIÓN EN TIEMPO REAL (FEED) ---
@@ -564,6 +566,173 @@
         }
     } catch (err) {
         console.error("Error cargando el historial del feed:", err);
+    }
+}
+async function cargarKPIs() {
+    try {
+        // Obtenemos la fecha de hoy (formato YYYY-MM-DD)
+        const hoy = new Date().toISOString().split('T')[0];
+
+        // Consultamos las órdenes de la tabla
+        const { data: ordenes, error } = await supabaseClient
+            .from('ordenes')
+            .select('costo, estado, created_at');
+
+        if (error) throw error;
+
+        let ingresosHoy = 0;
+        let equiposListos = 0;
+        let recibidosHoy = 0;
+        let entregadosHoy = 0;
+
+        if (ordenes && ordenes.length > 0) {
+            ordenes.forEach(orden => {
+                // Convertimos el estado a minúsculas y limpiamos espacios para evitar fallos
+                const estadoLogico = orden.estado ? orden.estado.toLowerCase().trim() : '';
+
+                // 1. Equipos que ya están terminados esperando al cliente
+                if (estadoLogico === 'listo') {
+                    equiposListos++;
+                }
+
+                // 2. Filtrar los movimientos que se registraron HOY
+                if (orden.created_at && orden.created_at.startsWith(hoy)) {
+                    
+                    // Si entró hoy con cualquiera de estos estados, suma a los Recibidos de hoy
+                    if (estadoLogico === 'recibido' || estadoLogico === 'por asignar' || estadoLogico === 'en proceso') {
+                        recibidosHoy++;
+                    }
+                    
+                    // Si hoy mismo se marcó como entregado, suma a los ingresos del día
+                    if (estadoLogico === 'entregado' || estadoLogico === 'pagado') {
+                        entregadosHoy++;
+                        ingresosHoy += parseFloat(orden.costo || 0); 
+                    }
+                }
+            });
+        }
+
+        // Calcular el Ticket Promedio del día
+        const ticketPromedio = entregadosHoy > 0 ? (ingresosHoy / entregadosHoy) : 0;
+
+        // Inyectar los datos calculados en los IDs del HTML
+        document.getElementById('kpi-ingresos').innerHTML = `S/ ${ingresosHoy.toFixed(2)}`;
+        document.getElementById('kpi-listos').innerText = equiposListos;
+        document.getElementById('kpi-flujo').innerHTML = `${entregadosHoy} <span class="text-lg text-gray-500 font-normal">/ ${recibidosHoy}</span>`;
+        document.getElementById('kpi-ticket').innerHTML = `S/ ${ticketPromedio.toFixed(2)}`;
+
+    } catch (err) {
+        console.error("Error al cargar los KPIs:", err);
+    }
+}
+async function cargarGraficaReal() {
+    try {
+        // 1. Preparar los últimos 7 días
+        const fechas = [];
+        const labels = [];
+        const datosIngresos = [0, 0, 0, 0, 0, 0, 0];
+
+        for (let i = 6; i >= 0; i--) {
+            let d = new Date();
+            d.setDate(d.getDate() - i);
+            
+            // Formato YYYY-MM-DD para comparar con Supabase
+            let yyyy = d.getFullYear();
+            let mm = String(d.getMonth() + 1).padStart(2, '0');
+            let dd = String(d.getDate()).padStart(2, '0');
+            fechas.push(`${yyyy}-${mm}-${dd}`);
+            
+            // Nombres para mostrar en la gráfica (Ej: "Lun", "Mar", "Hoy")
+            if (i === 0) {
+                labels.push('Hoy');
+            } else {
+                let nombreDia = d.toLocaleDateString('es-ES', { weekday: 'short' });
+                labels.push(nombreDia.charAt(0).toUpperCase() + nombreDia.slice(1));
+            }
+        }
+
+        // 2. Traer datos de la base de datos (solo de los últimos 7 días)
+        const fechaMasAntigua = fechas[0];
+        const { data: ordenes, error } = await supabaseClient
+            .from('ordenes')
+            .select('costo, estado, created_at')
+            .gte('created_at', fechaMasAntigua); // .gte significa "mayor o igual que"
+
+        if (error) throw error;
+
+        // 3. Agrupar el dinero por día
+        if (ordenes && ordenes.length > 0) {
+            ordenes.forEach(orden => {
+                const estadoLogico = orden.estado ? orden.estado.toLowerCase().trim() : '';
+                
+                // Solo sumamos ingresos de equipos cobrados/entregados
+                if (estadoLogico === 'entregado' || estadoLogico === 'pagado') {
+                    const fechaOrden = orden.created_at.split('T')[0]; // Sacamos la fecha pura
+                    const index = fechas.indexOf(fechaOrden); // Buscamos a qué día pertenece
+                    
+                    if (index !== -1) {
+                        datosIngresos[index] += parseFloat(orden.costo || 0);
+                    }
+                }
+            });
+        }
+
+        // 4. Dibujar la Gráfica con Chart.js
+        const ctx = document.getElementById('financeChart').getContext('2d');
+        let gradient = ctx.createLinearGradient(0, 0, 0, 300);
+        gradient.addColorStop(0, 'rgba(124, 58, 237, 0.5)'); 
+        gradient.addColorStop(1, 'rgba(124, 58, 237, 0)');   
+
+        // Si ya existe una gráfica previa, la destruimos para no encimar datos
+        if (window.miGrafica) {
+            window.miGrafica.destroy();
+        }
+
+        window.miGrafica = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels, // Nombres de los días dinámicos
+                datasets: [{
+                    label: 'Ingresos (S/)',
+                    data: datosIngresos, // El dinero real sumado
+                    borderColor: '#7c3aed',
+                    backgroundColor: gradient,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#10b981',
+                    pointBorderColor: '#fff',
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#101010',
+                        titleColor: '#7c3aed',
+                        bodyColor: '#fff',
+                        borderColor: '#333',
+                        borderWidth: 1,
+                        padding: 10,
+                        displayColors: false,
+                        callbacks: {
+                            label: function(context) { return 'S/ ' + context.parsed.y.toFixed(2); }
+                        }
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#6b7280' } },
+                    x: { grid: { display: false }, ticks: { color: '#6b7280' } }
+                }
+            }
+        });
+
+    } catch (err) {
+        console.error("Error al cargar la gráfica real:", err);
     }
 }
     </script>
