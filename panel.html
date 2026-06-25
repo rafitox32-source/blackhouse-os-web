@@ -508,6 +508,7 @@
             // Cargar los datos de Supabase
             cargarAgendaReal();
             cargarAsistenciaReal();
+            cargarFeedHistorial();
         };
 
         // --- SUSCRIPCIÓN EN TIEMPO REAL (FEED) ---
@@ -532,6 +533,39 @@
           })
           .subscribe();
 
+          async function cargarFeedHistorial() {
+    const container = document.getElementById('feed-container');
+    if (!container) return;
+
+    try {
+        // Traemos los últimos 10 mensajes de Supabase
+        const { data, error } = await supabaseClient
+            .from('feed_taller')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(10);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            container.innerHTML = data.map(item => `
+                <div class="flex gap-3" style="animation: fadeIn 0.5s;">
+                    <div class="mt-1 w-2 h-2 rounded-full bg-blue-400 shrink-0"></div>
+                    <div>
+                        <p class="text-sm text-gray-300">
+                            <strong class="text-white">${item.usuario}</strong> ${item.mensaje}
+                        </p>
+                        <p class="text-xs text-gray-500 mt-1 font-mono">Historial</p>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = '<p class="text-sm text-gray-500">No hay actividad reciente en el taller.</p>';
+        }
+    } catch (err) {
+        console.error("Error cargando el historial del feed:", err);
+    }
+}
     </script>
 </body>
 </html>
