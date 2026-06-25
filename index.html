@@ -32,6 +32,72 @@
 </head>
 <body class="bg-bhDark text-gray-100 font-sans antialiased selection:bg-bhPurple selection:text-white">
 
+<!-- ========================================================= -->
+    <!-- BANNER DE URGENCIA (FOMO)                                 -->
+    <!-- ========================================================= -->
+    <div id="urgency-banner" class="hidden fixed top-0 left-0 w-full h-10 z-[60] bg-gradient-to-r from-[#0f0518] via-bhPurple to-[#0f0518] text-white text-xs sm:text-sm font-semibold shadow-md overflow-hidden">
+        
+        <!-- Animación de brillo de fondo -->
+        <div class="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.2)_50%,transparent_75%,transparent_100%)] bg-[length:250%_250%,100%_100%] animate-[shimmer_3s_infinite_linear]"></div>
+
+        <div class="max-w-7xl mx-auto px-4 h-full flex items-center justify-between w-full relative z-10">
+            <div class="flex-1 flex items-center justify-center gap-2">
+                <span class="animate-pulse drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]">🔥</span>
+                <span>¡Atención! Quedan <span class="text-yellow-300 font-bold">pocas licencias disponibles</span> este mes.</span>
+                <a href="https://wa.me/51999888777?text=Hola,%20quiero%20aprovechar%20una%20de%20las%20%C3%BAltimas%20licencias%20de%20este%20mes." target="_blank" class="underline decoration-dashed decoration-white/50 hover:text-yellow-300 hover:decoration-yellow-300 transition-colors ml-1 hidden sm:inline-block">
+                    Asegurar la mía
+                </a>
+            </div>
+            
+            <button onclick="cerrarBannerUrgencia()" class="text-white/60 hover:text-white transition-colors shrink-0 ml-2 p-1" title="Cerrar mensaje">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    </div>
+
+    <style>
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+
+    <script>
+        // Lógica del Banner y LocalStorage
+        document.addEventListener('DOMContentLoaded', () => {
+            const banner = document.getElementById('urgency-banner');
+            const header = document.querySelector('header');
+            
+            // Verificamos en la memoria del navegador si el usuario ya lo cerró antes
+            if (!localStorage.getItem('blackhouse_banner_cerrado')) {
+                banner.classList.remove('hidden');
+                
+                // Como el header es "fixed", lo empujamos 40px (altura del banner) hacia abajo
+                if(header) {
+                    header.style.top = '40px';
+                    header.style.transition = 'top 0.3s ease'; // Transición suave
+                }
+            }
+        });
+
+        function cerrarBannerUrgencia() {
+            const banner = document.getElementById('urgency-banner');
+            const header = document.querySelector('header');
+            
+            // 1. Ocultamos el banner
+            banner.style.display = 'none';
+            
+            // 2. Regresamos el header a la parte superior de la pantalla
+            if(header) {
+                header.style.top = '0px';
+            }
+            
+            // 3. Guardamos la cookie local para que no vuelva a molestar al cliente
+            localStorage.setItem('blackhouse_banner_cerrado', 'true');
+        }
+    </script>
+    <!-- ========================================================= -->
+
     <header class="fixed top-0 left-0 w-full bg-bhDark/80 backdrop-blur-md border-b border-gray-800 z-40">
         <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
             <div class="flex items-center space-x-2">
