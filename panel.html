@@ -509,19 +509,7 @@
         }
 
         // --- CONEXIÓN SUPABASE ---
-        let supabaseClient;
-        async function initSupabase() {
-            if (supabaseClient) return supabaseClient;
-            try {
-                const res = await fetch('/api/config');
-                const config = await res.json();
-                supabaseClient = supabase.createClient(config.url, config.key);
-                return supabaseClient;
-            } catch (err) {
-                console.error("Error al cargar configuración de BD:", err);
-                return null;
-            }
-        }
+        // Cliente Supabase eliminado. Todas las peticiones van a /api/db
 
         // --- FUNCIONES DE BASE DE DATOS ---
         async function cargarAgendaReal() {
@@ -529,11 +517,12 @@
             if (!listaAgenda) return; 
 
             try {
-                const { data, error } = await supabaseClient
-                    .from('ordenes')
-                    .select('cliente, modelo, fecha_cita')
-                    .order('created_at', { ascending: false })
-                    .limit(5);
+                const res = await fetch('/api/db', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('web_token') },
+                    body: JSON.stringify({ action: 'select', table: 'ordenes', select: 'cliente, modelo, fecha_cita', order: { column: 'created_at', ascending: false }, limit: 5 })
+                });
+                const { data, error } = await res.json();
 
                 if (error) throw error;
 
@@ -558,126 +547,12 @@
             if (!tbody) return;
 
             try {
-                const { data, error } = await supabaseClient
-                    .from('asistencia')
-                    .select('usuario, hora_entrada, estado')
-                    .order('hora_entrada', { ascending: false });
-
-                if (error) throw error;
-
-                if (data && data.length > 0) {
-                    tbody.innerHTML = data.map(item => `
-                        <tr class="hover:bg-white/5 transition">
-                            <td class="py-4 px-2 font-bold text-white">${item.usuario}</td>
-                            <td class="py-4 px-2 font-mono text-gray-400">${item.hora_entrada}</td>
-                            <td class="py-4 px-2">
-                                <span class="${item.estado === 'Presente' ? 'bg-bhGreen/10 text-bhGreen' : 'bg-red-500/10 text-red-500'} text-xs font-bold px-2 py-1 rounded-full">
-                                    ${item.estado}
-                                </span>
-                            </td>
-                        </tr>
-                    `).join('');
-                }
-            } catch (err) {
-                console.error("Error cargando asistencia:", err);
-            }
-        }
-
-        // --- INICIALIZACIÓN DE GRÁFICOS Y DATOS AL CARGAR LA PÁGINA ---
-        window.onload = async function() {
-            await initSupabase();
-            // Inicializar Gráfico Chart.js
-            const ctx = document.getElementById('financeChart').getContext('2d');
-            let gradient = ctx.createLinearGradient(0, 0, 0, 300);
-            gradient.addColorStop(0, 'rgba(124, 58, 237, 0.5)'); 
-            gradient.addColorStop(1, 'rgba(124, 58, 237, 0)');   
-
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Hoy'],
-                    datasets: [{
-                        label: 'Ingresos (S/)',
-                        data: [850, 1120, 950, 1400, 1050, 1800, 1240],
-                        borderColor: '#7c3aed',
-                        backgroundColor: gradient,
-                        borderWidth: 3,
-                        pointBackgroundColor: '#10b981',
-                        pointBorderColor: '#fff',
-                        pointRadius: 5,
-                        pointHoverRadius: 7,
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: '#101010',
-                            titleColor: '#7c3aed',
-                            bodyColor: '#fff',
-                            borderColor: '#333',
-                            borderWidth: 1,
-                            padding: 10,
-                            displayColors: false,
-                            callbacks: {
-                                label: function(context) { return 'S/ ' + context.parsed.y; }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#6b7280' } },
-                        x: { grid: { display: false }, ticks: { color: '#6b7280' } }
-                    }
-                }
-            });
-
-            // Cargar los datos de Supabase
-            cargarAgendaReal();
-            cargarAsistenciaReal();
-            cargarFeedHistorial();
-            cargarKPIs();
-            cargarGraficaReal();
-            cargarLicenciaSaaS();
-            cargarPortalB2B();
-        };
-
-        // --- SUSCRIPCIÓN EN TIEMPO REAL (FEED) ---
-        supabaseClient
-          .channel('feed-realtime')
-          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'feed_taller' }, payload => {
-            const container = document.getElementById('feed-container');
-            const nuevoMensaje = `
-                <div class="flex gap-3" style="animation: fadeIn 0.5s;">
-                    <div class="mt-1 w-2 h-2 rounded-full bg-bhGreen shadow-[0_0_8px_#10b981] shrink-0"></div>
-                    <div>
-                        <p class="text-sm text-gray-300">
-                            <strong class="text-white">${payload.new.usuario}</strong> ${payload.new.mensaje}
-                        </p>
-                        <p class="text-xs text-gray-500 mt-1 font-mono">Hace un momento</p>
-                    </div>
-                </div>
-            `;
-            if (container) {
-                container.insertAdjacentHTML('afterbegin', nuevoMensaje);
-            }
-          })
-          .subscribe();
-
-          async function cargarFeedHistorial() {
-    const container = document.getElementById('feed-container');
-    if (!container) return;
-
-    try {
-        // Traemos los últimos 10 mensajes de Supabase
-        const { data, error } = await supabaseClient
-            .from('feed_taller')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(10);
+                const res = await fetch('/api/db', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('web_token') },
+            body: JSON.stringify({ action: 'select', table: 'feed_taller', order: { column: 'created_at', ascending: false }, limit: 10 })
+        });
+        const { data, error } = await res.json();
 
         if (error) throw error;
 
@@ -706,9 +581,12 @@ async function cargarKPIs() {
         const hoy = new Date().toISOString().split('T')[0];
 
         // Consultamos las órdenes de la tabla
-        const { data: ordenes, error } = await supabaseClient
-            .from('ordenes')
-            .select('costo, estado, created_at');
+        const res = await fetch('/api/db', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('web_token') },
+            body: JSON.stringify({ action: 'select', table: 'ordenes', select: 'costo, estado, created_at' })
+        });
+        const { data: ordenes, error } = await res.json();
 
         if (error) throw error;
 
@@ -785,10 +663,13 @@ async function cargarGraficaReal() {
 
         // 2. Traer datos de la base de datos (solo de los últimos 7 días)
         const fechaMasAntigua = fechas[0];
-        const { data: ordenes, error } = await supabaseClient
-            .from('ordenes')
-            .select('costo, estado, created_at')
-            .gte('created_at', fechaMasAntigua); // .gte significa "mayor o igual que"
+        const res = await fetch('/api/db', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('web_token') },
+            body: JSON.stringify({ action: 'select', table: 'ordenes', select: 'costo, estado, created_at' }) // Filtraremos en frontend para simplificar
+        });
+        let { data: ordenesData, error } = await res.json();
+        const ordenes = ordenesData ? ordenesData.filter(o => o.created_at >= fechaMasAntigua) : []; // .gte significa "mayor o igual que"
 
         if (error) throw error;
 
@@ -872,13 +753,13 @@ async function cargarGraficaReal() {
 async function cargarLicenciaSaaS() {
     try {
         // 1. Buscamos la licencia que está actualmente en uso (usada = TRUE)
-        const { data: licencia, error: errLicencia } = await supabaseClient
-            .from('licencias')
-            .select('*')
-            .eq('usada', true)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
+        const res = await fetch('/api/db', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('web_token') },
+            body: JSON.stringify({ action: 'select', table: 'licencias', match: { usada: true }, order: { column: 'created_at', ascending: false }, limit: 1 })
+        });
+        const { data: licenciasData, error: errLicencia } = await res.json();
+        const licencia = licenciasData && licenciasData.length > 0 ? licenciasData[0] : null;
 
         if (errLicencia) throw errLicencia;
 
@@ -921,10 +802,12 @@ async function cargarLicenciaSaaS() {
         const tbody = document.getElementById('recibos-tbody');
         if (!tbody) return;
 
-        const { data: recibos, error: errRecibos } = await supabaseClient
-            .from('recibos')
-            .select('*')
-            .order('id', { ascending: false });
+        const res = await fetch('/api/db', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('web_token') },
+            body: JSON.stringify({ action: 'select', table: 'recibos', order: { column: 'id', ascending: false } })
+        });
+        const { data: recibos, error: errRecibos } = await res.json();
 
         if (errRecibos) throw errRecibos;
 
@@ -953,11 +836,12 @@ async function cargarPortalB2B() {
     if (!tbody) return;
 
     try {
-        const { data: equipos, error } = await supabaseClient
-            .from('ordenes')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(5);
+        const resEq = await fetch('/api/db', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('web_token') },
+            body: JSON.stringify({ action: 'select', table: 'ordenes', limit: 5 })
+        });
+        const { data: equipos, error } = await resEq.json();
 
         if (error) throw error;
 

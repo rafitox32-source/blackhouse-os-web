@@ -36,24 +36,35 @@
         }
 
         async function buscar() {
-            const client = await initSupabase();
-            if (!client) {
-                document.getElementById('resultado').innerHTML = 'Error de conexión con el servidor.';
-                return;
-            }
-            const id = document.getElementById('orderId').value;
-            const { data, error } = await client
-              .from('ordenes')
-              .select('modelo, estado, fecha_entrega') // Solo estas columnas se verán
-              .eq('id', id)
-              .single();
+            const id = document.getElementById('orderId').value.trim();
+            if (!id) return;
             
-            // Lógica para mostrar resultados (ejemplo)
             const resultado = document.getElementById('resultado');
-            if (error || !data) {
-                resultado.innerHTML = '<span style="color:red;">Orden no encontrada.</span>';
-            } else {
-                resultado.innerHTML = `<strong>Modelo:</strong> ${data.modelo} <br> <strong>Estado:</strong> ${data.estado}`;
+            resultado.innerHTML = 'Buscando...';
+
+            try {
+                const res = await fetch('/api/db', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'select',
+                        table: 'ordenes',
+                        select: 'modelo, estado, fecha_entrega',
+                        match: { id: id },
+                        single: true
+                    })
+                });
+                
+                const { data, error } = await res.json();
+                
+                if (error || !data) {
+                    resultado.innerHTML = '<span style="color:red;">Orden no encontrada.</span>';
+                } else {
+                    resultado.innerHTML = `<strong>Modelo:</strong> ${data.modelo} <br> <strong>Estado:</strong> ${data.estado}`;
+                }
+            } catch (err) {
+                console.error("Error al buscar orden", err);
+                resultado.innerHTML = '<span style="color:red;">Error de conexión.</span>';
             }
         }
     </script>

@@ -1293,14 +1293,18 @@
 
         async function cargarResellersWeb() {
             try {
-                const client = await initSupabase();
-                if (!client) throw new Error("No se pudo conectar a la base de datos");
-
-                const { data, error } = await client
-                    .from('usuarios')
-                    .select('nombre_completo, nickname, avatar, estado')
-                    .eq('rol', 'reseller')
-                    .eq('estado', 'activo');
+                const res = await fetch('/api/db', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'select',
+                        table: 'usuarios',
+                        select: 'nombre_completo, nickname, avatar, estado',
+                        match: { rol: 'reseller', estado: 'activo' }
+                    })
+                });
+                
+                const { data, error } = await res.json();
                 
                 const loader = document.getElementById('resellers-loader');
                 const listContainer = document.getElementById('resellers-dynamic-list');
