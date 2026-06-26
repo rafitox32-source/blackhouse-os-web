@@ -76,10 +76,6 @@
                 Cerrar Sesión
             </a>
         </div>
-    <button onclick="switchTab('view-proveedores', this)" class="flex items-center w-full px-6 py-3 mt-2 text-gray-400 hover:bg-gray-800/50 hover:text-white transition-colors">
-    <i class="fa-solid fa-network-wired w-5"></i>
-    <span class="mx-4 font-semibold text-sm">Distribuidores</span>
-</button>
     </aside>
 
     <!-- ÁREA PRINCIPAL -->
@@ -369,7 +365,7 @@
                         </div>
                         <h3 class="text-lg font-bold text-white mb-2">Soporte Técnico 24/7</h3>
                         <p class="text-sm text-gray-400 mb-6">¿Problemas con el software o la sincronización? Escríbenos directamente.</p>
-                        <a href="https://wa.me/51999888777" class="w-full bg-white/5 hover:bg-white/10 border border-gray-700 text-white font-bold py-3 rounded-xl transition">
+                        <a href="https://wa.me/51912382709" class="w-full bg-white/5 hover:bg-white/10 border border-gray-700 text-white font-bold py-3 rounded-xl transition">
                             Contactar Asesor
                         </a>
                     </div>
@@ -477,89 +473,7 @@
 
             </div>
 <!-- ========================================================= -->
-    <!-- VISTA: RED DE PROVEEDORES Y DISTRIBUIDORES                -->
-    <!-- ========================================================= -->
-    <div id="view-proveedores" class="view-panel hidden">
-        
-        <!-- Encabezado de la Sección -->
-        <div class="flex justify-between items-center mb-8">
-            <div>
-                <h1 class="text-2xl font-black text-white m-0">Red de Distribuidores</h1>
-                <p class="text-gray-400 text-sm mt-1">Gestiona los afiliados que revenden BlackHouse OS</p>
-            </div>
-            <button class="bg-bhPurple hover:bg-purple-600 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(124,58,237,0.4)] flex items-center gap-2">
-                <i class="fa-solid fa-plus"></i> Añadir Proveedor
-            </button>
-        </div>
-
-        <!-- Grid de Tarjetas (Responsive) -->
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" id="proveedores-grid">
-            
-            <!-- ===================================== -->
-            <!-- TARJETA DE PROVEEDOR (Ejemplo 1)      -->
-            <!-- ===================================== -->
-            <div class="bg-[#0f0f11] border border-gray-800 rounded-2xl p-6 relative hover:border-bhPurple/50 transition-colors group">
-                
-                <!-- Etiqueta de Estado Flotante -->
-                <span class="absolute top-4 right-4 bg-green-500/10 text-green-400 text-xs font-bold px-3 py-1 rounded-full border border-green-500/20">
-                    Activo
-                </span>
-                
-                <!-- Círculo de Logo Empresarial -->
-                <div class="w-24 h-24 mx-auto rounded-full p-1 bg-gradient-to-tr from-bhPurple to-indigo-500 mb-5 shadow-[0_0_20px_rgba(124,58,237,0.2)]">
-                    <!-- src: Cambiar por el logo que venga de Supabase -->
-                    <img src="https://ui-avatars.com/api/?name=Electro+Store&background=1a1a1a&color=fff&size=150" alt="Logo Empresa" class="w-full h-full object-cover rounded-full border-4 border-[#0f0f11]">
-                </div>
-
-                <!-- Datos de la Empresa y Contacto -->
-                <div class="text-center mb-6">
-                    <h3 class="text-xl font-black text-white mb-1">ElectroStore Perú</h3>
-                    <span class="text-bhPurple bg-bhPurple/10 px-3 py-1 rounded-lg text-xs font-mono font-bold mb-4 inline-block border border-bhPurple/20">
-                        REF: ELECT-001
-                    </span>
-                    
-                    <div class="space-y-2 text-sm text-gray-400 mt-2">
-                        <p class="flex items-center justify-center gap-2"><i class="fa-solid fa-envelope w-4"></i> admin@electrostore.pe</p>
-                        <p class="flex items-center justify-center gap-2"><i class="fa-solid fa-phone w-4"></i> +51 999 888 777</p>
-                        <p class="flex items-center justify-center gap-2"><i class="fa-solid fa-location-dot w-4"></i> Arequipa, Perú</p>
-                    </div>
-                </div>
-
-                <!-- Resumen de Ventas / Estadísticas -->
-                <div class="grid grid-cols-2 gap-3 mb-6 p-3 bg-black/40 rounded-xl border border-gray-800/50">
-                    <div class="text-center">
-                        <p class="text-xs text-gray-500 mb-1">Licencias Vendidas</p>
-                        <p class="text-xl font-black text-white">12</p>
-                    </div>
-                    <div class="text-center border-l border-gray-800/50">
-                        <p class="text-xs text-gray-500 mb-1">Comisión Base</p>
-                        <p class="text-xl font-black text-green-400">20%</p>
-                    </div>
-                </div>
-
-                <!-- Botones de Acción Inferiores -->
-                <div class="flex gap-2 mt-auto">
-                    <button class="flex-1 bg-gray-800 hover:bg-gray-700 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-pen-to-square"></i> Editar
-                    </button>
-                    <button class="flex-1 bg-gray-800 hover:bg-gray-700 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-wallet"></i> Liquidar
-                    </button>
-                </div>
-            </div>
-
-            <!-- ===================================== -->
-            <!-- TARJETA: AÑADIR NUEVO (Interactiva)   -->
-            <!-- ===================================== -->
-            <div class="bg-transparent border-2 border-dashed border-gray-800 rounded-2xl flex flex-col items-center justify-center text-gray-500 hover:text-bhPurple hover:border-bhPurple hover:bg-bhPurple/5 transition-all cursor-pointer min-h-[420px] group">
-                <i class="fa-solid fa-building-circle-check text-5xl mb-4 group-hover:scale-110 transition-transform"></i>
-                <span class="font-bold text-lg">Registrar Nuevo Distribuidor</span>
-                <span class="text-sm mt-2 font-light">Asigna un código de afiliado único</span>
-            </div>
-
-        </div>
-    </div>
-    <!-- ========================================================= -->
+    <!-- VISTA: RED DE PROVEEDORES REMOVIDA -->
         </div>
     </main>
 
