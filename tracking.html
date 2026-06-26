@@ -20,16 +20,41 @@
     </div>
 
     <script>
-        // ¡OJO! Pon aquí tus credenciales de Supabase
-        const supabase = supabase.createClient('https://flfhpffslhjcuvhxsnjz.supabase.co/rest/v1/', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsZmhwZmZzbGhqY3V2aHhzbmp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4Mzg0MDMsImV4cCI6MjA4NDQxNDQwM30.9AxJDLzH2f5jJxAarw5dc1DMuvDlFY2sAr6zJBNUsFc');
+        let supabaseClient;
+
+        async function initSupabase() {
+            if (supabaseClient) return supabaseClient;
+            try {
+                const res = await fetch('/api/config');
+                const config = await res.json();
+                supabaseClient = supabase.createClient(config.url, config.key);
+                return supabaseClient;
+            } catch (err) {
+                console.error("Error cargando configuración de base de datos", err);
+                return null;
+            }
+        }
 
         async function buscar() {
+            const client = await initSupabase();
+            if (!client) {
+                document.getElementById('resultado').innerHTML = 'Error de conexión con el servidor.';
+                return;
+            }
             const id = document.getElementById('orderId').value;
-const { data, error } = await supabase
-  .from('ordenes')
-  .select('modelo, estado, fecha_entrega') // Solo estas columnas se verán
-  .eq('id', id)
-  .single();
+            const { data, error } = await client
+              .from('ordenes')
+              .select('modelo, estado, fecha_entrega') // Solo estas columnas se verán
+              .eq('id', id)
+              .single();
+            
+            // Lógica para mostrar resultados (ejemplo)
+            const resultado = document.getElementById('resultado');
+            if (error || !data) {
+                resultado.innerHTML = '<span style="color:red;">Orden no encontrada.</span>';
+            } else {
+                resultado.innerHTML = `<strong>Modelo:</strong> ${data.modelo} <br> <strong>Estado:</strong> ${data.estado}`;
+            }
         }
     </script>
 </body>

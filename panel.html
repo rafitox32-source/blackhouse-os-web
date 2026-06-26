@@ -509,9 +509,19 @@
         }
 
         // --- CONEXIÓN SUPABASE ---
-        const supabaseUrl = 'https://flfhpffslhjcuvhxsnjz.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsZmhwZmZzbGhqY3V2aHhzbmp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4Mzg0MDMsImV4cCI6MjA4NDQxNDQwM30.9AxJDLzH2f5jJxAarw5dc1DMuvDlFY2sAr6zJBNUsFc';
-        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+        let supabaseClient;
+        async function initSupabase() {
+            if (supabaseClient) return supabaseClient;
+            try {
+                const res = await fetch('/api/config');
+                const config = await res.json();
+                supabaseClient = supabase.createClient(config.url, config.key);
+                return supabaseClient;
+            } catch (err) {
+                console.error("Error al cargar configuración de BD:", err);
+                return null;
+            }
+        }
 
         // --- FUNCIONES DE BASE DE DATOS ---
         async function cargarAgendaReal() {
@@ -574,7 +584,8 @@
         }
 
         // --- INICIALIZACIÓN DE GRÁFICOS Y DATOS AL CARGAR LA PÁGINA ---
-        window.onload = function() {
+        window.onload = async function() {
+            await initSupabase();
             // Inicializar Gráfico Chart.js
             const ctx = document.getElementById('financeChart').getContext('2d');
             let gradient = ctx.createLinearGradient(0, 0, 0, 300);

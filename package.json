@@ -1,0 +1,11 @@
+{
+  "name": "web-blackhouse-portal",
+  "version": "1.0.0",
+  "description": "BlackHouse OS Web Portal",
+  "main": "api/login.js",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.108.2",
+    "bcrypt": "^6.0.0",
+    "jsonwebtoken": "^9.0.0"
+  }
+}
