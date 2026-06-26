@@ -1290,7 +1290,7 @@
 
         async function cargarResellersWeb() {
             try {
-                const { data, error } = await window.supabase
+                const { data, error } = await supabaseClient
                     .from('usuarios')
                     .select('nombre_completo, nickname, avatar, estado')
                     .eq('rol', 'reseller')
