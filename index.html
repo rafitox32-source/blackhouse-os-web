@@ -14,8 +14,16 @@
     <meta name="robots" content="index, follow">
     <meta name="language" content="Spanish">
     
-    <!-- Configuración para móviles (Asegura el responsive) -->
+    <!-- Configuración para móviles -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="BlackHouse OS">
+    <link rel="apple-touch-icon" href="/icon-512.png">
+    <meta name="mobile-web-app-capable" content="yes">
 
     <!-- ========================================================= -->
     <!-- OPEN GRAPH (WhatsApp, Facebook, LinkedIn)                 -->
@@ -66,6 +74,7 @@
         }
         .modal-animated { animation: modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
     </style>
+    <script src="js/i18n.js"></script>
 </head>
 <body class="bg-bhDark text-gray-100 font-sans antialiased selection:bg-bhPurple selection:text-white">
 
@@ -141,16 +150,20 @@
                 <span class="text-2xl font-black tracking-wider text-white">BlackHouse<span class="text-bhPurple">OS</span></span>
             </div>
             <nav class="hidden md:flex items-center space-x-8 text-sm font-medium text-gray-400">
-                <a href="#caracteristicas" class="hover:text-white transition">Características</a>
-                <a href="#enganche" class="hover:text-white transition">Por qué elegirnos</a>
+                <a href="#caracteristicas" class="hover:text-white transition" data-i18n="nav_features">Características</a>
+                <a href="#enganche" class="hover:text-white transition" data-i18n="nav_why_us">Por qué elegirnos</a>
                 <a href="tracking.html" class="text-bhGreen hover:underline transition flex items-center space-x-1">
-                    <i class="fa-solid px-1 fa-qrcode"></i> Rastreo de Clientes
+                    <i class="fa-solid px-1 fa-qrcode"></i> <span data-i18n="nav_tracking">Rastreo de Clientes</span>
                 </a>
             </nav>
             <div class="flex items-center space-x-4">
-                <button onclick="toggleModal('login-modal')" class="text-sm font-semibold hover:text-white transition px-4 py-2">Iniciar Sesión</button>
+                <select id="lang-selector" onchange="setLanguage(this.value)" class="bg-bhDark text-white border border-gray-800 rounded px-2 py-1 text-sm outline-none">
+                    <option value="es">🇪🇸 ES</option>
+                    <option value="en">🇺🇸 EN</option>
+                </select>
+                <button onclick="toggleModal('login-modal')" class="text-sm font-semibold hover:text-white transition px-4 py-2" data-i18n="nav_login">Iniciar Sesión</button>
                 <a href="javascript:void(0)" onclick="toggleResellersModal()" class="bg-bhPurple hover:bg-bhPurpleHover text-white text-sm font-bold px-5 py-2.5 rounded-lg transition shadow-lg shadow-bhPurple/20">
-                    Adquirir Licencia
+                    <span data-i18n="nav_buy">Adquirir Licencia</span>
                 </a>
             </div>
         </div>
@@ -162,20 +175,20 @@
             
             <div class="lg:col-span-7 text-center lg:text-left space-y-6">
                 <span class="inline-flex items-center gap-2 bg-bhPurple/10 border border-bhPurple/30 text-bhPurple text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full">
-                    <i class="fa-solid fa-bolt text-bhGreen"></i> Gestión Inteligente en Tiempo Real
+                    <i class="fa-solid fa-bolt text-bhGreen"></i> <span data-i18n="hero_badge">Gestión Inteligente en Tiempo Real</span>
                 </span>
                 <h1 class="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-white leading-[1.1]">
-                    Lleva tu Taller al <span class="bg-clip-text text-transparent bg-gradient-to-r from-bhPurple to-indigo-400">Nivel Empresarial</span>
+                    <span data-i18n="hero_title_1">Lleva tu Taller al </span><span class="bg-clip-text text-transparent bg-gradient-to-r from-bhPurple to-indigo-400" data-i18n="hero_title_2">Nivel Empresarial</span>
                 </h1>
                 <p class="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto lg:mx-0 font-light leading-relaxed">
-                    Deja de perder dinero en desorden. Controla inventarios, recepciones, órdenes técnicas, facturación y estados de clientes con una plataforma premium diseñada por y para técnicos profesionales.
+                    <span data-i18n="hero_desc">Deja de perder dinero en desorden. Controla inventarios, recepciones, órdenes técnicas, facturación y estados de clientes con una plataforma premium diseñada por y para técnicos profesionales.</span>
                 </p>
                 <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4">
                     <a href="javascript:void(0)" onclick="toggleResellersModal()" class="w-full sm:w-auto text-center bg-bhPurple hover:bg-bhPurpleHover text-white font-extrabold px-8 py-4 rounded-xl transition transform hover:-translate-y-0.5 shadow-xl shadow-bhPurple/30 text-lg">
-                        <i class="fa-brands fa-whatsapp mr-2"></i> Solicitar Demo Gratis
+                        <i class="fa-brands fa-whatsapp mr-2"></i> <span data-i18n="hero_btn_demo">Solicitar Demo Gratis</span>
                     </a>
                     <a href="#caracteristicas" class="w-full sm:w-auto text-center bg-transparent border border-gray-700 hover:border-gray-500 text-white font-semibold px-8 py-4 rounded-xl transition text-lg">
-                        Ver Características
+                        <span data-i18n="hero_btn_features">Ver Características</span>
                     </a>
                 </div>
             </div>
@@ -203,28 +216,28 @@
                 <span class="text-4xl lg:text-5xl font-black tracking-tight text-white mb-2 font-sans select-none">
                     <span class="stat-counter text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300" data-target="120">0</span><span class="text-[#7c3aed] ml-0.5">+</span>
                 </span>
-                <span class="text-xs font-bold uppercase tracking-widest text-gray-400">Talleres Activos</span>
+                <span class="text-xs font-bold uppercase tracking-widest text-gray-400" data-i18n="stat_shops">Talleres Activos</span>
             </div>
 
             <div class="flex flex-col items-center justify-center px-4 transition-transform duration-500 hover:translate-y-[-2px]">
                 <span class="text-4xl lg:text-5xl font-black tracking-tight text-white mb-2 font-sans select-none">
                     <span class="text-[#10b981] mr-1">S/</span><span class="stat-counter text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300" data-target="2">0</span><span class="text-[#7c3aed] ml-0.5">M+</span>
                 </span>
-                <span class="text-xs font-bold uppercase tracking-widest text-gray-400">Ingresos Gestionados</span>
+                <span class="text-xs font-bold uppercase tracking-widest text-gray-400" data-i18n="stat_income">Ingresos Gestionados</span>
             </div>
 
             <div class="flex flex-col items-center justify-center px-4 transition-transform duration-500 hover:translate-y-[-2px]">
                 <span class="text-4xl lg:text-5xl font-black tracking-tight text-white mb-2 font-sans select-none">
                     <span class="stat-counter text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300" data-target="98">0</span><span class="text-[#7c3aed] ml-0.5">%</span>
                 </span>
-                <span class="text-xs font-bold uppercase tracking-widest text-gray-400">Clientes Satisfechos</span>
+                <span class="text-xs font-bold uppercase tracking-widest text-gray-400" data-i18n="stat_clients">Clientes Satisfechos</span>
             </div>
 
             <div class="flex flex-col items-center justify-center px-4 transition-transform duration-500 hover:translate-y-[-2px]">
                 <span class="text-4xl lg:text-5xl font-black tracking-tight text-white mb-2 font-sans select-none">
                     <span class="stat-counter text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300" data-target="24">0</span><span class="text-[#7c3aed] font-light">/7</span>
                 </span>
-                <span class="text-xs font-bold uppercase tracking-widest text-gray-400">Horas de Soporte</span>
+                <span class="text-xs font-bold uppercase tracking-widest text-gray-400" data-i18n="stat_support">Horas de Soporte</span>
             </div>
 
         </div>
@@ -297,13 +310,13 @@
             <!-- Título y Subtítulo -->
             <div class="text-center space-y-4 mb-12">
                 <span class="text-xs font-bold uppercase tracking-widest text-bhPurple bg-bhPurple/10 px-4 py-1.5 rounded-full border border-bhPurple/20">
-                    Descubre el Sistema
+                    <span data-i18n="vid_badge">Descubre el Sistema</span>
                 </span>
                 <h2 class="text-3xl md:text-5xl font-black text-white tracking-tight">
-                    Mira BlackHouse OS en <span class="bg-clip-text text-transparent bg-gradient-to-r from-bhPurple to-indigo-400">Acción</span>
+                    <span data-i18n="vid_title_1">Mira BlackHouse OS en </span><span class="bg-clip-text text-transparent bg-gradient-to-r from-bhPurple to-indigo-400" data-i18n="vid_title_2">Acción</span>
                 </h2>
                 <p class="text-gray-400 text-lg max-w-2xl mx-auto">
-                    Conoce por dentro la interfaz rápida, intuitiva y oscura que está revolucionando la gestión de los talleres técnicos.
+                    <span data-i18n="vid_desc">Conoce por dentro la interfaz rápida, intuitiva y oscura que está revolucionando la gestión de los talleres técnicos.</span>
                 </p>
             </div>
 
@@ -328,9 +341,9 @@
             <!-- Botón de Acción (WhatsApp) -->
             <div class="mt-14 text-center">
                 <a href="javascript:void(0)" onclick="toggleResellersModal()" target="_blank" class="inline-flex items-center justify-center gap-3 bg-bhPurple hover:bg-bhPurpleHover text-white font-extrabold px-10 py-4 rounded-xl transition transform hover:-translate-y-1 shadow-xl shadow-bhPurple/30 text-lg">
-                    <i class="fa-brands fa-whatsapp text-2xl"></i> Solicitar Demo Gratis
+                    <i class="fa-brands fa-whatsapp text-2xl"></i> <span data-i18n="vid_btn">Solicitar Demo Gratis</span>
                 </a>
-                <p class="text-gray-500 text-xs mt-4">Un asesor te guiará paso a paso en tu propio entorno de pruebas.</p>
+                <p class="text-gray-500 text-xs mt-4"><span data-i18n="vid_sub">Un asesor te guiará paso a paso en tu propio entorno de pruebas.</span></p>
             </div>
             
         </div>
@@ -339,8 +352,8 @@
     <section id="caracteristicas" class="py-20 border-t border-gray-900 bg-black/40">
         <div class="max-w-7xl mx-auto px-6">
             <div class="text-center max-w-3xl mx-auto space-y-4 mb-16">
-                <h2 class="text-3xl md:text-4xl font-extrabold text-white tracking-tight">Todo lo que necesitas para dominar el mercado</h2>
-                <p class="text-gray-400">Haz clic sobre cualquiera de los módulos para abrir los detalles técnicos y ver su funcionamiento.</p>
+                <h2 class="text-3xl md:text-4xl font-extrabold text-white tracking-tight" data-i18n="feat_title">Todo lo que necesitas para dominar el mercado</h2>
+                <p class="text-gray-400" data-i18n="feat_desc">Haz clic sobre cualquiera de los módulos para abrir los detalles técnicos y ver su funcionamiento.</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -349,8 +362,8 @@
                     <div class="w-12 h-12 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-6 font-bold text-xl group-hover:bg-bhPurple group-hover:text-white transition-all">
                         <i class="fa-solid fa-clipboard-list"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-white mb-3">Recepción Dinámica</h3>
-                    <p class="text-gray-400 text-sm leading-relaxed mb-4">Registra equipos en segundos. Captura fallas visuales, datos del cliente y genera hojas de ingreso automáticas.</p>
+                    <h3 class="text-xl font-bold text-white mb-3" data-i18n="feat_rec_title">Recepción Dinámica</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4" data-i18n="feat_rec_desc">Registra equipos en segundos. Captura fallas visuales, datos del cliente y genera hojas de ingreso automáticas.</p>
                     <span class="text-xs font-bold text-bhPurple flex items-center gap-1 group-hover:gap-2 transition-all">Ver detalles e IA <i class="fa-solid fa-arrow-right"></i></span>
                 </div>
 
@@ -358,8 +371,8 @@
                     <div class="w-12 h-12 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-6 font-bold text-xl group-hover:bg-bhPurple group-hover:text-white transition-all">
                         <i class="fa-solid fa-flask"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-white mb-3">Laboratorio Técnico</h3>
-                    <p class="text-gray-400 text-sm leading-relaxed mb-4">Asigna prioridades, técnicos responsables y lleva una trazabilidad quirúrgica de cada reparación en curso.</p>
+                    <h3 class="text-xl font-bold text-white mb-3" data-i18n="feat_lab_title">Laboratorio Técnico</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4" data-i18n="feat_lab_desc">Asigna prioridades, técnicos responsables y lleva una trazabilidad quirúrgica de cada reparación en curso.</p>
                     <span class="text-xs font-bold text-bhPurple flex items-center gap-1 group-hover:gap-2 transition-all">Ver herramientas <i class="fa-solid fa-arrow-right"></i></span>
                 </div>
 
@@ -367,8 +380,8 @@
                     <div class="w-12 h-12 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-6 font-bold text-xl group-hover:bg-bhPurple group-hover:text-white transition-all">
                         <i class="fa-solid fa-boxes-stacked"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-white mb-3">Inventario Blindado</h3>
-                    <p class="text-gray-400 text-sm leading-relaxed mb-4">Alerta de stock bajo para pantallas, baterías y flexores. Vincula repuestos directamente al costo de la orden.</p>
+                    <h3 class="text-xl font-bold text-white mb-3" data-i18n="feat_inv_title">Inventario Blindado</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4" data-i18n="feat_inv_desc">Alerta de stock bajo para pantallas, baterías y flexores. Vincula repuestos directamente al costo de la orden.</p>
                     <span class="text-xs font-bold text-bhPurple flex items-center gap-1 group-hover:gap-2 transition-all">Ver carga inteligente <i class="fa-solid fa-arrow-right"></i></span>
                 </div>
 
@@ -376,8 +389,8 @@
                     <div class="w-12 h-12 bg-bhGreen/10 text-bhGreen rounded-xl flex items-center justify-center mb-6 font-bold text-xl group-hover:bg-bhGreen group-hover:text-white transition-all">
                         <i class="fa-solid fa-qrcode"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-white mb-3">Rastreo por Código QR</h3>
-                    <p class="text-gray-400 text-sm leading-relaxed mb-4">Tus clientes escanean el ticket y ven el estado en tiempo real. Reduce en un 70% las llamadas molestas preguntando "¿Ya quedó?".</p>
+                    <h3 class="text-xl font-bold text-white mb-3" data-i18n="feat_trk_title">Rastreo por Código QR</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4" data-i18n="feat_trk_desc">Tus clientes escanean el ticket y ven el estado en tiempo real. Reduce en un 70% las llamadas molestas.</p>
                     <span class="text-xs font-bold text-bhGreen flex items-center gap-1 group-hover:gap-2 transition-all">Ver cómo funciona <i class="fa-solid fa-arrow-right"></i></span>
                 </div>
 
@@ -385,8 +398,8 @@
                     <div class="w-12 h-12 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-6 font-bold text-xl group-hover:bg-bhPurple group-hover:text-white transition-all">
                         <i class="fa-solid fa-chart-line"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-white mb-3">Analista Financiero IA</h3>
-                    <p class="text-gray-400 text-sm leading-relaxed mb-4">Análisis predictivo de tus ganancias y métricas de rendimiento por empleado para tomar decisiones estratégicas.</p>
+                    <h3 class="text-xl font-bold text-white mb-3" data-i18n="feat_rep_title">Analista Financiero IA</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4" data-i18n="feat_rep_desc">Análisis predictivo de tus ganancias y métricas de rendimiento por empleado para tomar decisiones estratégicas.</p>
                     <span class="text-xs font-bold text-bhPurple flex items-center gap-1 group-hover:gap-2 transition-all">Ver reportes IA <i class="fa-solid fa-arrow-right"></i></span>
                 </div>
 
@@ -394,8 +407,8 @@
                     <div class="w-12 h-12 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-6 font-bold text-xl group-hover:bg-bhPurple group-hover:text-white transition-all">
                         <i class="fa-solid fa-file-invoice-dollar"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-white mb-3">Caja y Facturación</h3>
-                    <p class="text-gray-400 text-sm leading-relaxed mb-4">Control total de ingresos, adelantos, cuentas por cobrar, emisión de comprobantes y cierres de caja limpios.</p>
+                    <h3 class="text-xl font-bold text-white mb-3" data-i18n="feat_fac_title">Caja y Facturación</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-4" data-i18n="feat_fac_desc">Control total de ingresos, adelantos, cuentas por cobrar, emisión de comprobantes y cierres de caja limpios.</p>
                     <span class="text-xs font-bold text-bhPurple flex items-center gap-1 group-hover:gap-2 transition-all">Ver módulos SUNAT <i class="fa-solid fa-arrow-right"></i></span>
                 </div>
             </div>
@@ -404,13 +417,13 @@
 
     <section id="enganche" class="py-20 relative overflow-hidden">
         <div class="max-w-5xl mx-auto px-6 text-center space-y-8 relative z-10">
-            <h2 class="text-3xl md:text-5xl font-black text-white">¿Cuánto dinero estás perdiendo hoy por falta de control?</h2>
+            <h2 class="text-3xl md:text-5xl font-black text-white" data-i18n="hook_title">¿Cuánto dinero estás perdiendo hoy por falta de control?</h2>
             <p class="text-gray-400 text-lg md:text-xl max-w-3xl mx-auto font-light leading-relaxed">
-                El desorden aleja a los clientes premium. Con <span class="text-white font-bold">BlackHouse OS</span>, ofreces una experiencia transparente, automatizas las tareas tediosas y recuperas el control total de tu negocio desde cualquier lugar.
+                <span data-i18n="hook_desc">El desorden aleja a los clientes premium. Con <span class="text-white font-bold">BlackHouse OS</span>, ofreces una experiencia transparente, automatizas las tareas tediosas y recuperas el control total de tu negocio desde cualquier lugar.</span>
             </p>
             <div class="pt-6">
                 <a href="javascript:void(0)" onclick="toggleResellersModal()" class="inline-flex items-center space-x-3 bg-gradient-to-r from-bhPurple to-indigo-600 hover:from-bhPurpleHover hover:to-indigo-700 text-white font-extrabold px-10 py-5 rounded-2xl transition transform hover:-translate-y-1 shadow-2xl shadow-bhPurple/40 text-xl">
-                    <span>Quiero Digitalizar mi Taller Ahora</span>
+                    <span data-i18n="hook_btn">Quiero Digitalizar mi Taller Ahora</span>
                     <i class="fa-solid fa-arrow-right"></i>
                 </a>
             </div>
@@ -457,16 +470,16 @@
             
             <div id="login-web-container" class="space-y-6">
                 <div class="text-center">
-                    <h3 class="text-2xl font-bold text-white">Acceso al Panel</h3>
-                    <p class="text-sm text-gray-400 mt-1">Ingresa tus credenciales de administrador</p>
+                    <h3 class="text-2xl font-bold text-white" data-i18n="login_title">Acceso al Panel</h3>
+                    <p class="text-sm text-gray-400 mt-1" data-i18n="login_subtitle">Ingresa tus credenciales de administrador</p>
                 </div>
                 <form class="space-y-4" onsubmit="event.preventDefault(); iniciarSesionWeb();">
                     <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Correo Electrónico / Usuario</label>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2" data-i18n="login_lbl_user">Correo Electrónico / Usuario</label>
                         <input type="text" id="web-email" required class="w-full bg-bhDark border border-gray-800 focus:border-bhPurple focus:outline-none rounded-xl px-4 py-3 text-white transition text-sm" placeholder="Usuario o Correo">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Contraseña</label>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2" data-i18n="login_lbl_pass">Contraseña</label>
                         <input type="password" id="web-pass" required class="w-full bg-bhDark border border-gray-800 focus:border-bhPurple focus:outline-none rounded-xl px-4 py-3 text-white transition text-sm" placeholder="••••••••">
                     </div>
                     
@@ -479,7 +492,7 @@
                     <p id="login-msg" class="text-sm font-bold text-center hidden"></p>
                     
                     <button type="submit" class="w-full bg-bhPurple hover:bg-bhPurpleHover text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-bhPurple/20 text-sm mt-2">
-                        Entrar al Sistema
+                        <span data-i18n="login_btn_enter">Entrar al Sistema</span>
                     </button>
                 </form>
             </div>
@@ -637,7 +650,7 @@
                         <h3 class="text-xl font-bold text-gray-300">Licencia Mensual</h3>
                         <p class="text-xs text-gray-500 font-light">Ideal para probar la potencia del sistema.</p>
                         <div class="flex items-baseline gap-1 pt-2 border-b border-gray-800/60 pb-4">
-                            <span class="text-4xl font-black text-white">S/ 50.00</span>
+                            <span class="text-4xl font-black text-white">S/ 12.50</span>
                             <span class="text-gray-500 text-xs font-medium">/ mes</span>
                         </div>
                         <ul class="space-y-3 pt-2 text-xs text-gray-400">
@@ -657,9 +670,9 @@
                 <div class="bg-bhCard border border-gray-800 rounded-3xl p-6 flex flex-col justify-between shadow-xl transition duration-300 hover:-translate-y-1 hover:border-gray-700">
                     <div class="space-y-4">
                         <h3 class="text-xl font-bold text-gray-300">Plan Trimestral</h3>
-                        <p class="text-xs text-bhPurple font-semibold bg-bhPurple/10 inline-block px-2.5 py-1 rounded-md">Ahorras S/ 20.00</p>
+                        <p class="text-xs text-bhPurple font-semibold bg-bhPurple/10 inline-block px-2.5 py-1 rounded-md">Ahorras S/ 5.00</p>
                         <div class="flex items-baseline gap-1 pt-2 border-b border-gray-800/60 pb-4">
-                            <span class="text-4xl font-black text-white">S/ 130.00</span>
+                            <span class="text-4xl font-black text-white">S/ 32.50</span>
                             <span class="text-gray-500 text-xs font-medium">/ 3 meses</span>
                         </div>
                         <ul class="space-y-3 pt-2 text-xs text-gray-400">
@@ -679,9 +692,9 @@
                 <div class="bg-bhCard border border-gray-800 rounded-3xl p-6 flex flex-col justify-between shadow-xl transition duration-300 hover:-translate-y-1 hover:border-gray-700">
                     <div class="space-y-4">
                         <h3 class="text-xl font-bold text-gray-300">Plan Semestral</h3>
-                        <p class="text-xs text-bhPurple font-semibold bg-bhPurple/10 inline-block px-2.5 py-1 rounded-md">Ahorras S/ 50.00</p>
+                        <p class="text-xs text-bhPurple font-semibold bg-bhPurple/10 inline-block px-2.5 py-1 rounded-md">Ahorras S/ 12.50</p>
                         <div class="flex items-baseline gap-1 pt-2 border-b border-gray-800/60 pb-4">
-                            <span class="text-4xl font-black text-white">S/ 250.00</span>
+                            <span class="text-4xl font-black text-white">S/ 62.50</span>
                             <span class="text-gray-500 text-xs font-medium">/ 6 meses</span>
                         </div>
                         <ul class="space-y-3 pt-2 text-xs text-gray-400">
@@ -706,9 +719,9 @@
 
                     <div class="space-y-4">
                         <h3 class="text-xl font-bold text-white flex items-center gap-2">Licencia Anual <span class="text-base">👑</span></h3>
-                        <p class="text-xs text-bhGreen font-bold bg-bhGreen/10 inline-block px-2.5 py-1 rounded-md border border-bhGreen/20">Ahorras S/ 150.00</p>
+                        <p class="text-xs text-bhGreen font-bold bg-bhGreen/10 inline-block px-2.5 py-1 rounded-md border border-bhGreen/20">Ahorras S/ 37.50</p>
                         <div class="flex items-baseline gap-1 pt-2 border-b border-gray-800/60 pb-4">
-                            <span class="text-4xl font-black text-white">S/ 450.00</span>
+                            <span class="text-4xl font-black text-white">S/ 112.50</span>
                             <span class="text-gray-500 text-xs font-medium">/ año</span>
                         </div>
                         <ul class="space-y-3 pt-2 text-xs text-gray-300">
@@ -1192,28 +1205,28 @@
                 
                 <div class="space-y-3 flex-1">
                     <label class="block cursor-pointer relative">
-                        <input type="radio" name="modal-plan" value="Mensual (S/ 50)" class="peer sr-only" checked>
+                        <input type="radio" name="modal-plan" value="Mensual (S/ 25)" class="peer sr-only" checked>
                         <div class="p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 peer-checked:border-bhPurple peer-checked:bg-bhPurple/10 transition-all">
                             <div class="font-bold text-white mb-1">Plan Mensual</div>
-                            <div class="text-bhPurple font-bold">S/ 50.00</div>
+                            <div class="text-bhPurple font-bold">S/ 25.00</div>
                         </div>
                         <div class="absolute top-4 right-4 text-bhPurple opacity-0 peer-checked:opacity-100"><i class="fa-solid fa-circle-check"></i></div>
                     </label>
                     <label class="block cursor-pointer relative">
-                        <input type="radio" name="modal-plan" value="Anual (S/ 480)" class="peer sr-only">
+                        <input type="radio" name="modal-plan" value="Anual (S/ 240)" class="peer sr-only">
                         <div class="p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 peer-checked:border-bhPurple peer-checked:bg-bhPurple/10 transition-all">
                             <div class="font-bold text-white mb-1">Plan Anual</div>
                             <div class="text-sm text-gray-400 mb-1">2 meses gratis</div>
-                            <div class="text-bhPurple font-bold">S/ 480.00</div>
+                            <div class="text-bhPurple font-bold">S/ 240.00</div>
                         </div>
                         <div class="absolute top-4 right-4 text-bhPurple opacity-0 peer-checked:opacity-100"><i class="fa-solid fa-circle-check"></i></div>
                     </label>
                     <label class="block cursor-pointer relative">
-                        <input type="radio" name="modal-plan" value="Vitalicio (S/ 990)" class="peer sr-only">
+                        <input type="radio" name="modal-plan" value="Vitalicio (S/ 495)" class="peer sr-only">
                         <div class="p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 peer-checked:border-bhPurple peer-checked:bg-bhPurple/10 transition-all">
                             <div class="font-bold text-white mb-1">Plan Vitalicio</div>
                             <div class="text-sm text-yellow-500 mb-1">Pago único (Más popular)</div>
-                            <div class="text-bhPurple font-bold">S/ 990.00</div>
+                            <div class="text-bhPurple font-bold">S/ 495.00</div>
                         </div>
                         <div class="absolute top-4 right-4 text-bhPurple opacity-0 peer-checked:opacity-100"><i class="fa-solid fa-circle-check"></i></div>
                     </label>
@@ -1339,3 +1352,14 @@
             }
         }
     </script>
+
+    <!-- SERVICE WORKER -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(reg => console.log('[PWA] Service Worker registrado:', reg.scope))
+                .catch(err => console.error('[PWA] Error al registrar SW:', err));
+        }
+    </script>
+</body>
+</html>

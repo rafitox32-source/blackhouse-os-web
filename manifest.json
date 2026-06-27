@@ -1,0 +1,37 @@
+{
+  "name": "BlackHouse OS",
+  "short_name": "BlackHouse",
+  "description": "Sistema de gestión para servicios técnicos de celulares. Control de órdenes, inventario, rastreo QR y facturación.",
+  "start_url": "/panel.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#050505",
+  "theme_color": "#7c3aed",
+  "lang": "es",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Monitor del Taller",
+      "short_name": "Monitor",
+      "url": "/panel.html",
+      "description": "Supervisar el taller en tiempo real",
+      "icons": [{ "src": "/icon-512.png", "sizes": "512x512" }]
+    },
+    {
+      "name": "Rastrear Orden",
+      "short_name": "Rastreo",
+      "url": "/tracking.html",
+      "description": "Rastrear el estado de una reparación"
+    }
+  ]
+}
