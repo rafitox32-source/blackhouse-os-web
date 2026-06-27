@@ -802,12 +802,12 @@ async function cargarLicenciaSaaS() {
         const tbody = document.getElementById('recibos-tbody');
         if (!tbody) return;
 
-        const res = await fetch('/api/db', {
+        const resRecibos = await fetch('/api/db', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('web_token') },
             body: JSON.stringify({ action: 'select', table: 'recibos', order: { column: 'id', ascending: false } })
         });
-        const { data: recibos, error: errRecibos } = await res.json();
+        const { data: recibos, error: errRecibos } = await resRecibos.json();
 
         if (errRecibos) throw errRecibos;
 
