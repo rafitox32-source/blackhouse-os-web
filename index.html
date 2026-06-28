@@ -1450,12 +1450,30 @@
         }
 
         function contactarReseller(telefono) {
-            const planRadio = document.querySelector('input[name="modal-plan"]:checked');
-            const plan = planRadio ? planRadio.value : 'un plan';
-            const telLimpio = telefono.replace(/\D/g, '');
-            const mensaje = `Hola, deseo adquirir la Licencia BlackHouse OS. Me interesa el plan: ${plan}`;
-            const url = `https://wa.me/${telLimpio}?text=${encodeURIComponent(mensaje)}`;
-            window.open(url, '_blank');
+            try {
+                const planRadio = document.querySelector('input[name="modal-plan"]:checked');
+                const plan = planRadio ? planRadio.value : 'un plan';
+                const telLimpio = telefono.toString().replace(/\D/g, '');
+                
+                if (!telLimpio) {
+                    alert("El distribuidor no tiene un número de WhatsApp válido configurado.");
+                    return;
+                }
+
+                const mensaje = `Hola, deseo adquirir la Licencia BlackHouse OS. Me interesa el plan: ${plan}`;
+                const url = `https://api.whatsapp.com/send?phone=${telLimpio}&text=${encodeURIComponent(mensaje)}`;
+                
+                // Intentar abrir en nueva pestaña
+                const newWindow = window.open(url, '_blank');
+                
+                // Si el navegador bloqueó la ventana emergente, redirigimos en la misma pestaña
+                if (!newWindow || newWindow.closed || typeof newWindow.closed == 'undefined') {
+                    window.location.href = url;
+                }
+            } catch (err) {
+                console.error("Error al abrir WhatsApp:", err);
+                alert("Hubo un problema al abrir WhatsApp. Intenta de nuevo.");
+            }
         }
 
         async function cargarResellersWeb() {
