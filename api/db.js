@@ -56,10 +56,22 @@ module.exports = async (req, res) => {
     switch (action) {
       case 'select':
         query = query.select(select || '*');
+        
+        // --- SEGURIDAD BACKEND: FORZAR FILTRO POR EMPRESA_ID ---
+        if (userContext && userContext.rol === 'dueno') {
+           // Obligamos a que solo vea datos de su propia empresa sin importar lo que mande el frontend
+           query = query.eq('empresa_id', userContext.empresa_id);
+        } else if (userContext && userContext.rol !== 'dueno') {
+           // Si es un empleado regular (por ejemplo), solo ve sus propios datos
+           query = query.eq('usuario', userContext.usuario).eq('empresa_id', userContext.empresa_id);
+        }
+
         if (match) {
-          // Aplicar filtros exactos
+          // Aplicar filtros exactos (omitiendo empresa_id si ya fue forzado)
           for (const key in match) {
-            query = query.eq(key, match[key]);
+            if (key !== 'empresa_id' || !userContext) {
+              query = query.eq(key, match[key]);
+            }
           }
         }
         if (order) {

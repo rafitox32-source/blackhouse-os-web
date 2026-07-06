@@ -1,0 +1,51 @@
+name: CI/CD & Semantic Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    name: Release and Deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Necesario para crear Tags y Releases en GitHub
+      packages: write
+    
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Instalar dependencias
+        run: npm install || npm ci
+
+      - name: Ejecutar Semantic Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release
+
+      - name: Inyectar Versión para Cache Busting
+        run: |
+          if [ -f package.json ]; then
+            VERSION=$(node -p "require('./package.json').version")
+          else
+            VERSION="1.0.0"
+          fi
+          
+          # Reemplazar v=CACHE_VERSION por la nueva version en HTML
+          if [ -f index.html ]; then sed -i "s/v=CACHE_VERSION/v=$VERSION/g" index.html; fi
+          if [ -f panel.html ]; then sed -i "s/v=CACHE_VERSION/v=$VERSION/g" panel.html; fi
+          
+          # Crear version.json para que el frontend lo lea
+          echo "{\"version\": \"$VERSION\"}" > version.json
+          
+          # En un flujo real, aquí iría el paso de despliegue a Vercel/Netlify/FTP
+          # Ejemplo: npx vercel --prod --token ${{ secrets.VERCEL_TOKEN }}

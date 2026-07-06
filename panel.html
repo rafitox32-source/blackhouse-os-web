@@ -105,6 +105,7 @@
         </div>
 
         <div class="p-4 border-t border-gray-800/50">
+            <div id="web-version" class="text-xs text-gray-500 font-mono px-4 mb-2">v--.--.--</div>
             <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-lg transition text-sm font-semibold">
                 <i class="fa-solid fa-arrow-right-from-bracket"></i>
                 Cerrar Sesión
@@ -568,11 +569,27 @@
             const tbody = document.getElementById('asistencia-tbody');
             if (!tbody) return;
 
+            // Obtener empresa_id del usuario logueado
+            const empresaId = localStorage.getItem('web_empresa_id');
+            if (!empresaId) {
+                tbody.innerHTML = '<tr><td colspan="4" class="py-6 text-center text-gray-500">Sesión no válida. Inicia sesión nuevamente.</td></tr>';
+                return;
+            }
+
+            // Fecha de hoy para filtrar solo la asistencia del día
+            const hoy = new Date().toISOString().split('T')[0];
+
             try {
                 const res = await fetch('/api/db', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('web_token') },
-                    body: JSON.stringify({ action: 'select', table: 'asistencia', order: { column: 'created_at', ascending: false }, limit: 10 })
+                    body: JSON.stringify({ 
+                        action: 'select', 
+                        table: 'asistencia', 
+                        match: { empresa_id: parseInt(empresaId), fecha: hoy },
+                        order: { column: 'created_at', ascending: false }, 
+                        limit: 20 
+                    })
                 });
                 const { data, error } = await res.json();
 
@@ -888,6 +905,17 @@
             }
         }
 
+        async function cargarVersionWeb() {
+            try {
+                const res = await fetch('/version.json?t=' + new Date().getTime());
+                const data = await res.json();
+                const verEl = document.getElementById('web-version');
+                if(verEl) verEl.innerText = `Versión ${data.version}`;
+            } catch (e) {
+                console.error("No se pudo cargar la versión", e);
+            }
+        }
+
         // --- INICIALIZAR TODO AL CARGAR ---
         document.addEventListener('DOMContentLoaded', function() {
             cargarKPIs();
@@ -895,6 +923,7 @@
             cargarAsistenciaReal();
             cargarFeedReal();
             cargarLicenciaSaaS();
+            cargarVersionWeb();
         });
     </script>
 
