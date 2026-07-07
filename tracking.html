@@ -67,6 +67,14 @@
                 resultado.innerHTML = '<span style="color:red;">Error de conexión.</span>';
             }
         }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const idDesdeUrl = new URLSearchParams(window.location.search).get('id');
+            if (idDesdeUrl) {
+                document.getElementById('orderId').value = idDesdeUrl;
+                buscar();
+            }
+        });
     </script>
 </body>
 </html>
