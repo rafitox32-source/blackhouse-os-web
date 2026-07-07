@@ -30,7 +30,7 @@ module.exports = async (req, res) => {
     // --- PROTECCIÓN DE RUTAS PÚBLICAS ---
     // Estas consultas se pueden hacer SIN iniciar sesión (Tracking y Resellers)
     const isPublicQuery = 
-      (action === 'select' && table === 'ordenes' && select === 'modelo, estado, fecha_entrega') || // Tracking
+      (action === 'select' && table === 'ordenes' && select === 'modelo, estado') || // Tracking
       (action === 'select' && table === 'usuarios' && select === 'nombre_completo, nickname, avatar, estado, pais'); // Resellers
 
     let userContext = null;
