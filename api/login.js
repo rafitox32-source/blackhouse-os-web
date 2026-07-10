@@ -7,6 +7,9 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
+// Debe coincidir exactamente con el secreto usado para verificar en api/db.js
+const JWT_SECRET = process.env.JWT_SECRET || process.env.SUPABASE_KEY;
+
 module.exports = async (req, res) => {
   // Set CORS headers for Vercel Serverless Function
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -24,6 +27,11 @@ module.exports = async (req, res) => {
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  if (!JWT_SECRET) {
+    console.error('FALTA JWT_SECRET/SUPABASE_KEY en las variables de entorno.');
+    return res.status(500).json({ error: 'Configuración del servidor incompleta' });
   }
 
   try {
@@ -57,14 +65,14 @@ module.exports = async (req, res) => {
 
     // Generamos un JWT token
     const token = jwt.sign(
-      { 
-        id: user.id, 
-        usuario: user.usuario, 
-        rol: user.rol, 
-        empresa_id: user.empresa_id 
+      {
+        id: user.id,
+        usuario: user.usuario,
+        rol: user.rol,
+        empresa_id: user.empresa_id
       },
-      process.env.SUPABASE_KEY || 'default-secret',
-      { expiresIn: '24h' }
+      JWT_SECRET,
+      { expiresIn: '24h', algorithm: 'HS256' }
     );
 
     return res.status(200).json({

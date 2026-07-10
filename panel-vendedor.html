@@ -154,9 +154,9 @@
         // --- GUARDIA DE SEGURIDAD ---
         const rol = localStorage.getItem('web_rol');
         const token = localStorage.getItem('web_token');
-        if (!token) { window.location.href = 'index.html'; }
-        if (rol === 'dueno') { window.location.href = 'panel.html'; }
-        if (rol === 'tecnico') { window.location.href = 'panel-tecnico.html'; }
+        if (!token) { window.location.href = 'index.html'; throw new Error('Sin token, redirigiendo'); }
+        if (rol === 'dueno') { window.location.href = 'panel.html'; throw new Error('Rol dueno, redirigiendo'); }
+        if (rol === 'tecnico') { window.location.href = 'panel-tecnico.html'; throw new Error('Rol tecnico, redirigiendo'); }
 
         document.getElementById('nombre-vendedor').textContent = localStorage.getItem('web_user') || '';
 
@@ -428,30 +428,24 @@
             const procesados = [];
             try {
                 for (const item of carrito) {
-                    const producto = productos.find(p => p.id === item.id);
-                    if (!producto) throw new Error(`"${item.nombre}" ya no existe en el catálogo`);
-                    if (item.cantidad > producto.stock) throw new Error(`Stock insuficiente de "${item.nombre}" (quedan ${producto.stock})`);
-
-                    const nuevoStock = producto.stock - item.cantidad;
-
-                    await llamarApi({
-                        action: 'insert',
-                        table: 'movimientos_stock',
-                        data: {
-                            sku: item.sku || 'SIN-SKU',
-                            cantidad: -item.cantidad,
-                            nota: `Venta móvil - ${item.nombre} x${item.cantidad} (vendedor: ${localStorage.getItem('web_user')})`
+                    // Un solo llamado atomico en el servidor: valida stock,
+                    // lo descuenta y registra el movimiento en la misma
+                    // transaccion de Postgres (evita ventas simultaneas
+                    // pisandose el stock, y evita que quede el movimiento
+                    // registrado sin el descuento o viceversa).
+                    const resp = await llamarApi({
+                        action: 'rpc',
+                        fn: 'registrar_venta_movil',
+                        params: {
+                            p_producto_id: item.id,
+                            p_cantidad: item.cantidad,
+                            p_sku: item.sku || 'SIN-SKU',
+                            p_nota: `Venta móvil - ${item.nombre} x${item.cantidad} (vendedor: ${localStorage.getItem('web_user')})`
                         }
                     });
 
-                    await llamarApi({
-                        action: 'update',
-                        table: 'productos',
-                        data: { stock: nuevoStock },
-                        match: { id: item.id }
-                    });
-
-                    producto.stock = nuevoStock;
+                    const producto = productos.find(p => p.id === item.id);
+                    if (producto) producto.stock = resp.data;
                     procesados.push(item);
                 }
 

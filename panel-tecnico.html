@@ -149,9 +149,9 @@
         // --- GUARDIA DE SEGURIDAD ---
         const rol = localStorage.getItem('web_rol');
         const token = localStorage.getItem('web_token');
-        if (!token) { window.location.href = 'index.html'; }
-        if (rol === 'dueno') { window.location.href = 'panel.html'; }
-        if (rol === 'vendedor') { window.location.href = 'panel-vendedor.html'; }
+        if (!token) { window.location.href = 'index.html'; throw new Error('Sin token, redirigiendo'); }
+        if (rol === 'dueno') { window.location.href = 'panel.html'; throw new Error('Rol dueno, redirigiendo'); }
+        if (rol === 'vendedor') { window.location.href = 'panel-vendedor.html'; throw new Error('Rol vendedor, redirigiendo'); }
 
         document.getElementById('nombre-tecnico').textContent = localStorage.getItem('web_user') || '';
 

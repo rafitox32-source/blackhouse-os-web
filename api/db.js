@@ -7,6 +7,70 @@ const supabase = createClient(
   process.env.SUPABASE_KEY
 );
 
+// Secreto para firmar/verificar JWT. Si algun dia falta SUPABASE_KEY, NO hay
+// fallback publico: se corta en seco (ver checkeo mas abajo) en vez de abrir
+// una puerta trasera con un secreto adivinable.
+const JWT_SECRET = process.env.JWT_SECRET || process.env.SUPABASE_KEY;
+
+// --- COLUMNAS SENSIBLES: nunca visibles para roles que no sean "dueno",
+// sin importar lo que el cliente pida en "select"/"data". Vendedores y
+// tecnicos no deben ver costos de compra ni precio mayorista.
+const COLUMNAS_OCULTAS_NO_DUENO = {
+  productos: ['costo', 'costo_caycel', 'costo_samtec', 'costo_cyberphone', 'costo_amobile', 'precio_mayor', 'costo_por_confirmar'],
+};
+
+// --- MATRIZ DE PERMISOS: que tabla/accion puede tocar cada rol no-dueno.
+// "dueno" no esta en el mapa a proposito: tiene acceso a cualquier tabla
+// (siempre acotado por empresa_id, ese limite no cambia). Para
+// vendedor/tecnico, si la tabla no aparece aqui, la peticion se rechaza.
+const PERMISOS_POR_ROL = {
+  vendedor: {
+    productos: ['select'], // las ventas van por RPC (registrar_venta_movil), no por insert/update directo
+  },
+  tecnico: {
+    productos: ['select'],
+    ordenes: ['select', 'insert'],
+  },
+};
+
+// --- RPCs PERMITIDAS: llamadas a funciones de Postgres explicitamente
+// habilitadas. No se permite ejecutar cualquier funcion arbitraria.
+const RPCS_PERMITIDAS = {
+  registrar_venta_movil: { roles: ['dueno', 'vendedor'] },
+};
+
+function tienePermiso(rol, tabla, accion) {
+  if (rol === 'dueno') return true;
+  const permisosTabla = PERMISOS_POR_ROL[rol] && PERMISOS_POR_ROL[rol][tabla];
+  return Array.isArray(permisosTabla) && permisosTabla.includes(accion);
+}
+
+// Reduce "alias:columna" a "columna" (PostgREST permite renombrar columnas
+// con un alias, lo cual antes se colaba por el filtro de columnas ocultas).
+// Cualquier parentesis (recurso embebido, ej. "productos(costo)") se
+// considera sospechoso y se rechaza de plano para roles no-dueno.
+function normalizarColumna(col) {
+  const c = col.trim();
+  if (c.includes('(') || c.includes(')')) return null;
+  const idx = c.indexOf(':');
+  return (idx !== -1 ? c.slice(idx + 1) : c).trim();
+}
+
+function selectSeguro(tabla, selectPedido, rol) {
+  const ocultas = COLUMNAS_OCULTAS_NO_DUENO[tabla];
+  if (!ocultas || rol === 'dueno') return selectPedido || '*';
+  if (!selectPedido || selectPedido.trim() === '*') {
+    // Sin columnas explicitas: no hay forma segura de saber el esquema
+    // completo aqui, asi que se rechaza en vez de arriesgar una fuga.
+    return null;
+  }
+  const columnas = selectPedido.split(',').map(c => normalizarColumna(c));
+  if (columnas.some(c => c === null)) return { bloqueada: '(recurso embebido no permitido)' };
+  const bloqueada = columnas.find(c => ocultas.includes(c));
+  if (bloqueada) return { bloqueada };
+  return selectPedido;
+}
+
 module.exports = async (req, res) => {
   // CORS Headers
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -24,12 +88,17 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: 'Método no permitido' });
   }
 
+  if (!JWT_SECRET) {
+    console.error('FALTA JWT_SECRET/SUPABASE_KEY en las variables de entorno.');
+    return res.status(500).json({ error: 'Configuración del servidor incompleta' });
+  }
+
   try {
-    const { action, table, data, match, select, order, limit } = req.body;
+    const { action, table, data, match, select, order, limit, fn, params } = req.body;
 
     // --- PROTECCIÓN DE RUTAS PÚBLICAS ---
     // Estas consultas se pueden hacer SIN iniciar sesión (Tracking y Resellers)
-    const isPublicQuery = 
+    const isPublicQuery =
       (action === 'select' && table === 'ordenes' && select === 'modelo, estado') || // Tracking
       (action === 'select' && table === 'usuarios' && select === 'nombre_completo, nickname, avatar, estado, pais'); // Resellers
 
@@ -41,34 +110,33 @@ module.exports = async (req, res) => {
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return res.status(401).json({ error: 'No autorizado. Falta token.' });
       }
-      
+
       const token = authHeader.split(' ')[1];
       try {
-        userContext = jwt.verify(token, process.env.SUPABASE_KEY || 'default-secret');
+        userContext = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
       } catch (err) {
         return res.status(401).json({ error: 'Token inválido o expirado.' });
       }
     }
 
-    // --- COLUMNAS SENSIBLES: nunca visibles para roles que no sean "dueno",
-    // sin importar lo que el cliente pida en "select". Esto es intencional:
-    // vendedores/tecnicos no deben ver costos de compra ni precio mayorista.
-    const COLUMNAS_OCULTAS_NO_DUENO = {
-      productos: ['costo', 'costo_caycel', 'costo_samtec', 'costo_cyberphone', 'costo_amobile', 'precio_mayor', 'costo_por_confirmar'],
-    };
-
-    function selectSeguro(tabla, selectPedido, rol) {
-      const ocultas = COLUMNAS_OCULTAS_NO_DUENO[tabla];
-      if (!ocultas || rol === 'dueno') return selectPedido || '*';
-      if (!selectPedido || selectPedido.trim() === '*') {
-        // Sin columnas explicitas: no hay forma segura de saber el esquema
-        // completo aqui, asi que se rechaza en vez de arriesgar una fuga.
-        return null;
+    // --- RPC: llamadas a funciones de Postgres pre-aprobadas ---
+    if (action === 'rpc') {
+      if (!userContext) return res.status(401).json({ error: 'No autorizado' });
+      const permisoRpc = RPCS_PERMITIDAS[fn];
+      if (!permisoRpc || !permisoRpc.roles.includes(userContext.rol)) {
+        return res.status(403).json({ error: `No tienes permiso para ejecutar "${fn}"` });
       }
-      const columnas = selectPedido.split(',').map(c => c.trim());
-      const bloqueada = columnas.find(c => ocultas.includes(c));
-      if (bloqueada) return { bloqueada };
-      return selectPedido;
+      // empresa_id siempre lo pone el servidor, nunca el cliente
+      const resultado = await supabase.rpc(fn, { ...(params || {}), p_empresa_id: userContext.empresa_id });
+      if (resultado.error) {
+        return res.status(400).json({ error: resultado.error.message });
+      }
+      return res.status(200).json({ success: true, data: resultado.data });
+    }
+
+    // --- MATRIZ DE PERMISOS: bloquear tablas/acciones no autorizadas ---
+    if (userContext && !tienePermiso(userContext.rol, table, action)) {
+      return res.status(403).json({ error: `Tu rol no tiene permiso para "${action}" sobre "${table}".` });
     }
 
     // --- EJECUCIÓN DE CONSULTAS A SUPABASE (CON LLAVE MAESTRA) ---
@@ -89,10 +157,7 @@ module.exports = async (req, res) => {
         // --- SEGURIDAD BACKEND: FORZAR FILTRO POR EMPRESA_ID ---
         // Toda consulta autenticada queda atada a la empresa del token, sin
         // importar lo que mande el frontend. Esta es la frontera real de
-        // aislamiento multi-empresa (antes esto tambien filtraba por
-        // "usuario" para roles no-dueno, lo cual rompia lecturas de
-        // catalogos compartidos como "productos" u "ordenes" para
-        // vendedor/tecnico).
+        // aislamiento multi-empresa.
         if (userContext) {
            query = query.eq('empresa_id', userContext.empresa_id);
         }
@@ -131,28 +196,30 @@ module.exports = async (req, res) => {
       case 'update': {
         // Solo usuarios logueados pueden actualizar
         if (!userContext) return res.status(401).json({ error: 'No autorizado para actualizar' });
+        if (!match || Object.keys(match).length === 0) {
+          // Sin match, un update afectaria TODA la tabla de la empresa.
+          return res.status(400).json({ error: 'Un "update" requiere un "match" (ej. {id: ...}) que identifique la fila.' });
+        }
         const datosUpdate = { ...data };
         delete datosUpdate.empresa_id; // no se permite mover un registro a otra empresa
         if (userContext.rol !== 'dueno' && COLUMNAS_OCULTAS_NO_DUENO[table]) {
           for (const col of COLUMNAS_OCULTAS_NO_DUENO[table]) delete datosUpdate[col];
         }
         query = query.update(datosUpdate).eq('empresa_id', userContext.empresa_id);
-        if (match) {
-          for (const key in match) {
-            if (key !== 'empresa_id') query = query.eq(key, match[key]);
-          }
+        for (const key in match) {
+          if (key !== 'empresa_id') query = query.eq(key, match[key]);
         }
         query = query.select();
         break;
       }
-        
+
       default:
         return res.status(400).json({ error: 'Acción no soportada' });
     }
 
     // Esperar la respuesta de Supabase
     const result = await query;
-    
+
     if (result.error) {
       console.error("Error de Supabase:", result.error);
       return res.status(400).json({ error: result.error.message });
