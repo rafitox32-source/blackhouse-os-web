@@ -140,9 +140,59 @@
                     <span class="text-sm text-gray-400 font-semibold">Total</span>
                     <span id="carrito-total" class="text-2xl font-black text-bhGreen">S/ 0.00</span>
                 </div>
-                <button onclick="confirmarVentaCarrito()" id="btn-confirmar-carrito"
+                <button onclick="abrirModalCliente()" id="btn-confirmar-carrito"
                     class="w-full py-4 rounded-xl bg-bhGreen hover:opacity-90 text-black font-bold text-sm disabled:opacity-40">
                     Confirmar venta
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: DATOS DEL CLIENTE + BOLETA -->
+    <div id="modal-cliente" class="hidden fixed inset-0 z-40 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+        <div class="bg-bhCard border border-gray-800 rounded-2xl w-full max-w-sm max-h-[90vh] flex flex-col">
+            <div class="p-5 border-b border-gray-800 flex items-center justify-between shrink-0">
+                <h3 class="text-lg font-bold text-white"><i class="fa-solid fa-receipt text-bhPurple mr-2"></i>Datos para la boleta</h3>
+                <button onclick="cerrarModalCliente(); abrirCarrito();" class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-gray-400 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-5 space-y-4 overflow-y-auto">
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Nombre del cliente</label>
+                    <input id="cli-nombre" type="text" required placeholder="Ej: Juan Pérez"
+                        class="w-full mt-1.5 bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-bhPurple/60">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Teléfono WhatsApp</label>
+                    <input id="cli-telefono" type="tel" required placeholder="Ej: 51987654321 (con código de país)"
+                        class="w-full mt-1.5 bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-bhPurple/60">
+                    <p class="text-[11px] text-gray-500 mt-1">Incluye el código de país si lo tienes a mano (Perú: 51). Si pones solo el número local, se le antepone 51 automáticamente.</p>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">DNI / RUC <span class="normal-case text-gray-600">(opcional)</span></label>
+                    <input id="cli-documento" type="text" placeholder="Ej: 12345678"
+                        class="w-full mt-1.5 bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-bhPurple/60">
+                </div>
+
+                <div class="flex items-center justify-between bg-black/30 border border-gray-800 rounded-xl px-4 py-3">
+                    <span class="text-sm text-gray-400 font-semibold">Total a cobrar</span>
+                    <span id="cli-total" class="text-xl font-black text-bhGreen">S/ 0.00</span>
+                </div>
+
+                <p class="text-[11px] text-gray-500 leading-relaxed">
+                    <i class="fa-solid fa-circle-info mr-1"></i>
+                    Esto genera un comprobante informativo con los datos que SUNAT pide ver en una boleta
+                    (RUC, razón social, ítems, total), pero <strong>no es una boleta electrónica con validez
+                    tributaria</strong> ante SUNAT. Se envía por WhatsApp, no se declara ante SUNAT automáticamente.
+                </p>
+            </div>
+
+            <div class="p-5 border-t border-gray-800 shrink-0">
+                <button onclick="confirmarVentaConBoleta()" id="btn-confirmar-cliente"
+                    class="w-full py-4 rounded-xl bg-bhGreen hover:opacity-90 text-black font-bold text-sm disabled:opacity-40 flex items-center justify-center gap-2">
+                    <i class="fa-brands fa-whatsapp"></i> Confirmar y enviar boleta
                 </button>
             </div>
         </div>
@@ -418,12 +468,93 @@
             if (carrito.length === 0) cerrarCarrito();
         }
 
-        async function confirmarVentaCarrito() {
+        // --- MODAL: DATOS DEL CLIENTE (paso previo a confirmar la venta) ---
+        function abrirModalCliente() {
+            if (carrito.length === 0) return;
+            document.getElementById('cli-nombre').value = '';
+            document.getElementById('cli-telefono').value = '';
+            document.getElementById('cli-documento').value = '';
+            const total = carrito.reduce((s, i) => s + i.cantidad * i.precio, 0);
+            document.getElementById('cli-total').textContent = 'S/ ' + total.toFixed(2);
+            cerrarCarrito();
+            document.getElementById('modal-cliente').classList.remove('hidden');
+        }
+
+        function cerrarModalCliente() {
+            document.getElementById('modal-cliente').classList.add('hidden');
+        }
+
+        // Deja solo dígitos y, si el número parece local (9 dígitos o menos y
+        // no empieza ya con "51"), le antepone el código de país de Perú.
+        // Supuesto especifico de este negocio (opera en Perú) - si este panel
+        // se reutiliza en otro país, este default hay que ajustarlo o pedirle
+        // el código de país al vendedor explícitamente.
+        function normalizarTelefonoWhatsapp(telefono) {
+            let limpio = (telefono || '').replace(/\D/g, '');
+            if (limpio.length > 0 && limpio.length <= 9 && !limpio.startsWith('51')) {
+                limpio = '51' + limpio;
+            }
+            return limpio;
+        }
+
+        // Arma el texto de la boleta en formato WhatsApp (*negrita* con asteriscos).
+        // IMPORTANTE: esto es un comprobante INFORMATIVO con los datos que SUNAT
+        // pide ver en una boleta (RUC, razón social, ítems, total) — NO es una
+        // boleta electrónica con validez tributaria ante SUNAT. Para eso el
+        // negocio tendría que ser emisor electrónico registrado, con certificado
+        // digital y transmisión vía un OSE/PSE o el portal de SUNAT (un proyecto
+        // de integración legal/gubernamental aparte, no solo código).
+        function construirTextoBoleta(boleta, empresa, cliente, items, total) {
+            const fecha = new Date().toLocaleDateString('es-PE', { year: 'numeric', month: '2-digit', day: '2-digit' });
+            const nombreComercial = (empresa.nombre || '').trim();
+            const razonSocial = (empresa.razon_social || '').trim() || nombreComercial || 'Mi Negocio';
+            const encabezadoNombre = (nombreComercial && nombreComercial !== razonSocial)
+                ? `${razonSocial} (${nombreComercial})`
+                : razonSocial;
+
+            const lineasItems = items.map(i => `${i.nombre} x${i.cantidad} — S/ ${i.subtotal.toFixed(2)}`).join('\n');
+            const direccionTelefono = [empresa.direccion, empresa.telefono].filter(Boolean).join(' · ');
+
+            let texto = `🧾 *BOLETA DE VENTA ${boleta.numero_comprobante}*\n`;
+            texto += `${encabezadoNombre}\n`;
+            if (empresa.ruc) texto += `RUC: ${empresa.ruc}\n`;
+            if (direccionTelefono) texto += `${direccionTelefono}\n`;
+            texto += `------------------------------\n`;
+            texto += `Fecha: ${fecha}\n`;
+            texto += `Cliente: ${cliente.nombre}${cliente.documento ? ' - Doc: ' + cliente.documento : ''}\n`;
+            texto += `------------------------------\n`;
+            texto += `${lineasItems}\n`;
+            texto += `------------------------------\n`;
+            texto += `*TOTAL: S/ ${total.toFixed(2)}*\n\n`;
+            texto += `¡Gracias por tu compra!\n\n`;
+            texto += `_Comprobante informativo, no es un comprobante electrónico con validez tributaria ante SUNAT._`;
+            return texto;
+        }
+
+        async function confirmarVentaConBoleta() {
             if (carrito.length === 0) return;
 
-            const btn = document.getElementById('btn-confirmar-carrito');
+            const nombreCliente = document.getElementById('cli-nombre').value.trim();
+            const telefonoCliente = document.getElementById('cli-telefono').value.trim();
+            const documentoCliente = document.getElementById('cli-documento').value.trim();
+
+            if (!nombreCliente) return mostrarToast('El nombre del cliente es obligatorio', 'error');
+            if (!telefonoCliente) return mostrarToast('El teléfono de WhatsApp del cliente es obligatorio', 'error');
+
+            const btn = document.getElementById('btn-confirmar-cliente');
             btn.disabled = true;
-            btn.textContent = 'Registrando venta...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Registrando venta...';
+
+            // Se calcula ANTES de tocar el carrito (se vacía en cuanto la venta
+            // se confirma, para que el vendedor pueda seguir vendiendo mientras
+            // se genera la boleta en segundo plano).
+            const itemsParaBoleta = carrito.map(i => ({
+                nombre: i.nombre,
+                cantidad: i.cantidad,
+                precio: i.precio,
+                subtotal: Number((i.cantidad * i.precio).toFixed(2))
+            }));
+            const totalVenta = itemsParaBoleta.reduce((s, i) => s + i.subtotal, 0);
 
             const procesados = [];
             try {
@@ -448,26 +579,72 @@
                     if (producto) producto.stock = resp.data;
                     procesados.push(item);
                 }
-
-                const totalVenta = carrito.reduce((s, i) => s + i.cantidad * i.precio, 0);
-                mostrarToast(`Venta registrada: ${carrito.length} producto(s), total S/ ${totalVenta.toFixed(2)}`, 'success');
-                carrito = [];
-                renderizarCarrito();
-                actualizarBarraCarrito();
-                filtrarProductos();
-                cerrarCarrito();
             } catch (e) {
                 // Los items en "procesados" ya descontaron stock antes del error;
                 // los quitamos del carrito para no venderlos dos veces, y dejamos
-                // el resto para que el vendedor reintente.
+                // el resto para que el vendedor reintente. La boleta NO se genera
+                // si la venta no se completó del todo.
                 carrito = carrito.filter(i => !procesados.includes(i));
                 renderizarCarrito();
                 actualizarBarraCarrito();
                 filtrarProductos();
                 mostrarToast('Venta parcial - error: ' + e.message, 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-brands fa-whatsapp"></i> Confirmar y enviar boleta';
+                return;
+            }
+
+            // A partir de aquí la venta YA está registrada (stock descontado de
+            // verdad). Lo que sigue -boleta + WhatsApp- es informativo: si algo
+            // falla no se revierte nada de lo vendido, solo se avisa.
+            mostrarToast(`Venta registrada: ${procesados.length} producto(s), total S/ ${totalVenta.toFixed(2)}`, 'success');
+            carrito = [];
+            renderizarCarrito();
+            actualizarBarraCarrito();
+            filtrarProductos();
+            cerrarModalCliente();
+
+            try {
+                const respBoleta = await llamarApi({
+                    action: 'rpc',
+                    fn: 'generar_boleta_movil',
+                    params: {
+                        p_cliente_nombre: nombreCliente,
+                        p_cliente_documento: documentoCliente || null,
+                        p_cliente_telefono: telefonoCliente,
+                        p_monto_total: totalVenta,
+                        p_items_json: itemsParaBoleta
+                    }
+                });
+                const boleta = Array.isArray(respBoleta.data) ? respBoleta.data[0] : respBoleta.data;
+                if (!boleta || !boleta.numero_comprobante) throw new Error('La boleta no devolvió un número de comprobante');
+
+                const respEmpresa = await llamarApi({
+                    action: 'select',
+                    table: 'empresas',
+                    select: 'nombre, ruc, razon_social, direccion, telefono'
+                });
+                const empresa = (respEmpresa.data && respEmpresa.data[0]) || {};
+
+                const textoBoleta = construirTextoBoleta(
+                    boleta, empresa,
+                    { nombre: nombreCliente, documento: documentoCliente },
+                    itemsParaBoleta, totalVenta
+                );
+
+                const telefonoLimpio = normalizarTelefonoWhatsapp(telefonoCliente);
+                const urlWhatsapp = `https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(textoBoleta)}`;
+                // window.open (en vez de location.href) funciona tanto en navegador
+                // normal como dentro del WebView de Capacitor: abre el intent de
+                // WhatsApp sin navegar fuera de la app.
+                window.open(urlWhatsapp, '_blank');
+
+                mostrarToast(`Boleta ${boleta.numero_comprobante} lista para enviar por WhatsApp`, 'success');
+            } catch (e) {
+                mostrarToast('Venta registrada pero no se pudo generar la boleta: ' + e.message, 'error');
             } finally {
                 btn.disabled = false;
-                btn.textContent = 'Confirmar venta';
+                btn.innerHTML = '<i class="fa-brands fa-whatsapp"></i> Confirmar y enviar boleta';
             }
         }
 

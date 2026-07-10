@@ -1011,7 +1011,7 @@
         // --- VENTAS MÓVILES (lo que los vendedores registraron desde panel-vendedor.html) ---
         // Estas ventas quedan como filas en "movimientos_stock" con cantidad negativa
         // y una nota con el formato "Venta móvil - <producto> x<cantidad> (vendedor: <usuario>)"
-        // (ver registrar_venta_movil() en Postgres y confirmarVentaCarrito() en panel-vendedor.html).
+        // (ver registrar_venta_movil() en Postgres y confirmarVentaConBoleta() en panel-vendedor.html).
         // movimientos_stock no guarda el precio de venta, así que el monto se estima
         // cruzando el sku con el precio actual del catálogo (puede diferir si el
         // precio cambió después de la venta, o quedar sin monto si el sku no coincide).

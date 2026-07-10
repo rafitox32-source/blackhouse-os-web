@@ -26,6 +26,11 @@ const COLUMNAS_OCULTAS_NO_DUENO = {
 const PERMISOS_POR_ROL = {
   vendedor: {
     productos: ['select'], // las ventas van por RPC (registrar_venta_movil), no por insert/update directo
+    // Solo lectura: necesita el RUC/razon social/direccion de SU PROPIA
+    // empresa para imprimir el encabezado de la boleta. Sigue acotado por
+    // empresa (ver columnaEmpresaDe() mas abajo), no hay fuga entre
+    // empresas distintas.
+    empresas: ['select'],
   },
   tecnico: {
     productos: ['select'],
@@ -37,7 +42,25 @@ const PERMISOS_POR_ROL = {
 // habilitadas. No se permite ejecutar cualquier funcion arbitraria.
 const RPCS_PERMITIDAS = {
   registrar_venta_movil: { roles: ['dueno', 'vendedor'] },
+  // Genera un comprobante informativo (boleta) para una venta movil. OJO:
+  // esto NO es una boleta electronica con validez tributaria ante SUNAT (para
+  // eso hay que ser emisor electronico registrado, con certificado digital y
+  // transmision via un OSE/PSE o el portal de SUNAT, un proyecto de
+  // integracion legal/gubernamental aparte). Es un recibo con el formato y
+  // los datos que SUNAT pide ver en un comprobante, pensado para mandarselo
+  // al cliente por WhatsApp, no para declarar impuestos.
+  generar_boleta_movil: { roles: ['dueno', 'vendedor'] },
 };
+
+// --- COLUMNA QUE ATA CADA TABLA A LA EMPRESA DEL TOKEN ---
+// Casi todas las tablas tienen una columna "empresa_id". La tabla "empresas"
+// es la excepcion: la fila ES la empresa, asi que se ata por su propio "id".
+// Sin este mapeo, forzar ".eq('empresa_id', ...)" sobre "empresas" fallaria
+// (esa tabla no tiene esa columna) en cuanto alguien pidiera "select" sobre
+// ella.
+function columnaEmpresaDe(tabla) {
+  return tabla === 'empresas' ? 'id' : 'empresa_id';
+}
 
 function tienePermiso(rol, tabla, accion) {
   if (rol === 'dueno') return true;
@@ -154,18 +177,20 @@ module.exports = async (req, res) => {
         }
         query = query.select(resultadoSelect);
 
-        // --- SEGURIDAD BACKEND: FORZAR FILTRO POR EMPRESA_ID ---
+        // --- SEGURIDAD BACKEND: FORZAR FILTRO POR EMPRESA ---
         // Toda consulta autenticada queda atada a la empresa del token, sin
         // importar lo que mande el frontend. Esta es la frontera real de
-        // aislamiento multi-empresa.
+        // aislamiento multi-empresa. (columnaEmpresaDe: "id" para la propia
+        // tabla "empresas", "empresa_id" para el resto)
+        const colEmpresaSelect = columnaEmpresaDe(table);
         if (userContext) {
-           query = query.eq('empresa_id', userContext.empresa_id);
+           query = query.eq(colEmpresaSelect, userContext.empresa_id);
         }
 
         if (match) {
-          // Aplicar filtros exactos (omitiendo empresa_id si ya fue forzado)
+          // Aplicar filtros exactos (omitiendo la columna de empresa si ya fue forzada)
           for (const key in match) {
-            if (key !== 'empresa_id' || !userContext) {
+            if (key !== colEmpresaSelect || !userContext) {
               query = query.eq(key, match[key]);
             }
           }
