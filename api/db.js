@@ -210,7 +210,8 @@ module.exports = async (req, res) => {
       case 'insert': {
         // Solo usuarios logueados pueden insertar
         if (!userContext) return res.status(401).json({ error: 'No autorizado para insertar' });
-        const datosInsert = { ...data, empresa_id: userContext.empresa_id }; // nunca confiar en el empresa_id del cliente
+        const colEmpresaInsert = columnaEmpresaDe(table);
+        const datosInsert = { ...data, [colEmpresaInsert]: userContext.empresa_id }; // nunca confiar en el empresa_id del cliente
         if (userContext.rol !== 'dueno' && COLUMNAS_OCULTAS_NO_DUENO[table]) {
           for (const col of COLUMNAS_OCULTAS_NO_DUENO[table]) delete datosInsert[col];
         }
@@ -225,14 +226,15 @@ module.exports = async (req, res) => {
           // Sin match, un update afectaria TODA la tabla de la empresa.
           return res.status(400).json({ error: 'Un "update" requiere un "match" (ej. {id: ...}) que identifique la fila.' });
         }
+        const colEmpresaUpdate = columnaEmpresaDe(table);
         const datosUpdate = { ...data };
-        delete datosUpdate.empresa_id; // no se permite mover un registro a otra empresa
+        delete datosUpdate[colEmpresaUpdate]; // no se permite mover un registro a otra empresa
         if (userContext.rol !== 'dueno' && COLUMNAS_OCULTAS_NO_DUENO[table]) {
           for (const col of COLUMNAS_OCULTAS_NO_DUENO[table]) delete datosUpdate[col];
         }
-        query = query.update(datosUpdate).eq('empresa_id', userContext.empresa_id);
+        query = query.update(datosUpdate).eq(colEmpresaUpdate, userContext.empresa_id);
         for (const key in match) {
-          if (key !== 'empresa_id') query = query.eq(key, match[key]);
+          if (key !== colEmpresaUpdate) query = query.eq(key, match[key]);
         }
         query = query.select();
         break;
