@@ -111,7 +111,7 @@
 
         <div class="p-4 border-t border-gray-800/50">
             <div id="web-version" class="text-xs text-gray-500 font-mono px-4 mb-2">v--.--.--</div>
-            <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-lg transition text-sm font-semibold">
+            <a href="index.html" onclick="cerrarSesionDueno(); return false;" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-lg transition text-sm font-semibold">
                 <i class="fa-solid fa-arrow-right-from-bracket"></i>
                 Cerrar Sesión
             </a>
@@ -552,15 +552,33 @@
         // --- GUARDIA DE SEGURIDAD ---
         function verificarAccesoDueno() {
             const rol = localStorage.getItem('web_rol');
-            if (rol === 'vendedor') { window.location.href = 'panel-vendedor.html'; return; }
-            if (rol === 'tecnico') { window.location.href = 'panel-tecnico.html'; return; }
+            // "throw" despues de cada redirect (no solo "return"): verificarAccesoDueno()
+            // se llama como sentencia normal, sin throw el resto del script de este
+            // <script> (incluido el listener DOMContentLoaded mas abajo, que dispara
+            // cargarKPIs/cargarAsistenciaReal/etc.) seguiria ejecutandose y lanzando
+            // fetch() con el token del rol equivocado mientras la redireccion todavia
+            // no termina de navegar (window.location.href no corta la ejecucion).
+            // Mismo patron ya usado en panel-vendedor.html y panel-tecnico.html.
+            if (rol === 'vendedor') { window.location.href = 'panel-vendedor.html'; throw new Error('Rol vendedor, redirigiendo'); }
+            if (rol === 'tecnico') { window.location.href = 'panel-tecnico.html'; throw new Error('Rol tecnico, redirigiendo'); }
             if (rol !== 'dueno') {
                 alert("Acceso denegado: inicia sesión de nuevo.");
                 localStorage.clear();
                 window.location.href = 'index.html';
+                throw new Error('Rol invalido o sesion vacia, redirigiendo');
             }
         }
         verificarAccesoDueno();
+
+        // El link "Cerrar Sesion" apuntaba directo a index.html sin limpiar
+        // localStorage: el token/rol/usuario quedaban guardados, asi que
+        // visitar panel.html de nuevo (URL directa, historial del navegador)
+        // volvia a entrar sin pedir credenciales. Mismo patron de limpieza que
+        // cerrarSesionVendedor()/cerrarSesionTecnico() en los otros paneles.
+        function cerrarSesionDueno() {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
 
         // --- INTERFAZ ---
         const dateOptions = { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' };
