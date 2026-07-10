@@ -102,6 +102,11 @@
                 <i class="fa-solid fa-mobile-screen-button w-5 transition"></i>
                 <span class="font-semibold text-sm">Monitor Móvil</span>
             </button>
+
+            <button onclick="switchTab('view-ventas-movil', this)" class="nav-link w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 border-l-3 border-transparent rounded-r-lg transition text-left">
+                <i class="fa-solid fa-cash-register w-5 transition"></i>
+                <span class="font-semibold text-sm">Ventas Móviles</span>
+            </button>
         </div>
 
         <div class="p-4 border-t border-gray-800/50">
@@ -450,6 +455,95 @@
             </div>
             <!-- FIN VISTA MONITOR MÓVIL -->
 
+
+            <!-- ========================================================= -->
+            <!-- VISTA 5: VENTAS MÓVILES (VENTAS DEL EQUIPO DESDE EL CELULAR) -->
+            <!-- ========================================================= -->
+            <div id="view-ventas-movil" class="view-panel space-y-6">
+
+                <!-- Cabecera -->
+                <div class="bg-gradient-to-r from-[#0f0a1a] to-[#0a0a0a] border border-bhPurple/20 p-6 rounded-2xl shadow-xl">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="w-3 h-3 rounded-full bg-bhGreen animate-pulse"></div>
+                        <span class="text-xs font-bold text-bhGreen uppercase tracking-wider">En Vivo</span>
+                    </div>
+                    <h2 class="text-2xl md:text-3xl font-black text-white"><i class="fa-solid fa-cash-register text-bhPurple mr-1"></i> Ventas desde el Celular</h2>
+                    <p class="text-gray-400 mt-1 text-sm">Lo que tus vendedores registraron hoy desde el panel de ventas móvil, sin abrir el sistema de escritorio.</p>
+                </div>
+
+                <!-- KPIs -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                    <div class="monitor-card text-center">
+                        <div class="status-dot green mx-auto mb-2"></div>
+                        <p class="text-2xl md:text-3xl font-black text-white" id="vm-total-hoy">S/ 0.00</p>
+                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mt-1">Vendido Hoy</p>
+                    </div>
+                    <div class="monitor-card text-center">
+                        <div class="status-dot blue mx-auto mb-2"></div>
+                        <p class="text-2xl md:text-3xl font-black text-white" id="vm-unidades-hoy">0</p>
+                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mt-1">Unidades Vendidas</p>
+                    </div>
+                    <div class="monitor-card text-center">
+                        <div class="status-dot purple mx-auto mb-2"></div>
+                        <p class="text-2xl md:text-3xl font-black text-white" id="vm-ventas-hoy">0</p>
+                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mt-1">N° de Ventas</p>
+                    </div>
+                    <div class="monitor-card text-center">
+                        <div class="status-dot orange mx-auto mb-2"></div>
+                        <p class="text-2xl md:text-3xl font-black text-white" id="vm-vendedores-hoy">0</p>
+                        <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mt-1">Vendedores Activos</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Detalle de ventas -->
+                    <div class="lg:col-span-2 bg-bhCard border border-gray-800 rounded-2xl shadow-xl overflow-hidden">
+                        <div class="p-5 border-b border-gray-800/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                            <h2 class="text-base font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-receipt text-bhPurple"></i> Detalle de Ventas de Hoy
+                            </h2>
+                            <button onclick="cargarVentasMovil()" class="bg-white/5 border border-gray-700 hover:bg-white/10 text-white text-xs py-2 px-4 rounded-lg transition flex items-center gap-2">
+                                <i class="fa-solid fa-rotate"></i> Actualizar
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-sm min-w-[500px]">
+                                <thead class="text-gray-500 uppercase tracking-wider bg-black/40 text-xs">
+                                    <tr>
+                                        <th class="py-3 px-4 border-b border-gray-800">Hora</th>
+                                        <th class="py-3 px-4 border-b border-gray-800">Producto</th>
+                                        <th class="py-3 px-4 border-b border-gray-800 text-center">Cant.</th>
+                                        <th class="py-3 px-4 border-b border-gray-800">Vendedor</th>
+                                        <th class="py-3 px-4 border-b border-gray-800 text-right">Monto</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="vm-ventas-tbody" class="text-gray-300 divide-y divide-gray-800/50">
+                                    <tr><td colspan="5" class="py-8 text-center text-gray-500"><i class="fa-solid fa-spinner fa-spin text-bhPurple text-xl mb-2"></i><br>Cargando ventas...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Ranking por vendedor -->
+                    <div class="bg-bhCard border border-gray-800 rounded-2xl shadow-xl flex flex-col">
+                        <div class="p-5 border-b border-gray-800/50">
+                            <h2 class="text-base font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-ranking-star text-orange-400"></i> Por Vendedor (Hoy)
+                            </h2>
+                        </div>
+                        <div id="vm-ranking-vendedores" class="p-5 space-y-3 flex-1 overflow-y-auto">
+                            <p class="text-sm text-gray-500 text-center py-4">Cargando...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Última actualización -->
+                <div class="text-center py-3">
+                    <p class="text-xs text-gray-600" id="vm-ultima-actualizacion">Última actualización: --</p>
+                </div>
+            </div>
+            <!-- FIN VISTA VENTAS MÓVILES -->
+
         </div>
     </main>
 
@@ -502,6 +596,13 @@
 
             // Cargar datos según la vista
             if (tabId === 'view-monitor') cargarMonitorMovil();
+            if (tabId === 'view-ventas-movil') cargarVentasMovil();
+        }
+
+        function escaparHtml(txt) {
+            const d = document.createElement('div');
+            d.textContent = txt == null ? '' : String(txt);
+            return d.innerHTML;
         }
 
         // --- FUNCIONES DE BASE DE DATOS ---
@@ -904,6 +1005,113 @@
 
             } catch (err) {
                 console.error("Error cargando Monitor Móvil:", err);
+            }
+        }
+
+        // --- VENTAS MÓVILES (lo que los vendedores registraron desde panel-vendedor.html) ---
+        // Estas ventas quedan como filas en "movimientos_stock" con cantidad negativa
+        // y una nota con el formato "Venta móvil - <producto> x<cantidad> (vendedor: <usuario>)"
+        // (ver registrar_venta_movil() en Postgres y confirmarVentaCarrito() en panel-vendedor.html).
+        // movimientos_stock no guarda el precio de venta, así que el monto se estima
+        // cruzando el sku con el precio actual del catálogo (puede diferir si el
+        // precio cambió después de la venta, o quedar sin monto si el sku no coincide).
+        async function cargarVentasMovil() {
+            const tbody = document.getElementById('vm-ventas-tbody');
+            const ranking = document.getElementById('vm-ranking-vendedores');
+            try {
+                const [resMov, resProd] = await Promise.all([
+                    fetch('/api/db', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('web_token') },
+                        body: JSON.stringify({ action: 'select', table: 'movimientos_stock', select: 'id, sku, cantidad, nota, creado_en', order: { column: 'creado_en', ascending: false }, limit: 300 })
+                    }),
+                    fetch('/api/db', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('web_token') },
+                        body: JSON.stringify({ action: 'select', table: 'productos', select: 'sku, precio', limit: 2000 })
+                    })
+                ]);
+                const { data: movimientos, error: errMov } = await resMov.json();
+                const { data: productosData, error: errProd } = await resProd.json();
+                if (errMov) throw new Error(errMov);
+                if (errProd) throw new Error(errProd);
+
+                const precioPorSku = {};
+                (productosData || []).forEach(p => { if (p.sku) precioPorSku[p.sku] = Number(p.precio || 0); });
+
+                const hoy = new Date().toISOString().split('T')[0];
+                const patronVenta = /^Venta móvil - (.+) x\d+ \(vendedor: (.+)\)$/;
+
+                const ventasHoy = (movimientos || [])
+                    .filter(m => m.nota && m.nota.startsWith('Venta móvil') && m.creado_en && m.creado_en.startsWith(hoy))
+                    .map(m => {
+                        const coincide = m.nota.match(patronVenta);
+                        const producto = coincide ? coincide[1] : m.nota;
+                        const vendedor = coincide ? coincide[2] : 'Desconocido';
+                        const cantidad = Math.abs(Number(m.cantidad) || 0);
+                        const precioUnit = precioPorSku[m.sku];
+                        const monto = (precioUnit !== undefined) ? precioUnit * cantidad : null;
+                        return { id: m.id, hora: m.creado_en, producto, vendedor, cantidad, monto };
+                    });
+
+                // KPIs
+                const totalMonto = ventasHoy.reduce((s, v) => s + (v.monto || 0), 0);
+                const totalUnidades = ventasHoy.reduce((s, v) => s + v.cantidad, 0);
+                const vendedoresUnicos = new Set(ventasHoy.map(v => v.vendedor));
+                document.getElementById('vm-total-hoy').textContent = 'S/ ' + totalMonto.toFixed(2);
+                document.getElementById('vm-unidades-hoy').textContent = totalUnidades;
+                document.getElementById('vm-ventas-hoy').textContent = ventasHoy.length;
+                document.getElementById('vm-vendedores-hoy').textContent = vendedoresUnicos.size;
+
+                // Detalle
+                if (ventasHoy.length > 0) {
+                    tbody.innerHTML = ventasHoy.map(v => {
+                        const hora = v.hora ? new Date(v.hora).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '--:--';
+                        return `
+                        <tr class="hover:bg-white/5 transition">
+                            <td class="py-3 px-4 font-mono text-gray-500 text-xs">${hora}</td>
+                            <td class="py-3 px-4 text-white font-semibold text-sm">${escaparHtml(v.producto)}</td>
+                            <td class="py-3 px-4 text-center text-gray-300">${v.cantidad}</td>
+                            <td class="py-3 px-4 text-bhPurple font-bold text-sm">${escaparHtml(v.vendedor)}</td>
+                            <td class="py-3 px-4 text-right font-mono text-bhGreen">${v.monto !== null ? 'S/ ' + v.monto.toFixed(2) : '—'}</td>
+                        </tr>`;
+                    }).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-gray-500">Aún no hay ventas móviles registradas hoy.</td></tr>';
+                }
+
+                // Ranking por vendedor
+                const porVendedor = {};
+                ventasHoy.forEach(v => {
+                    if (!porVendedor[v.vendedor]) porVendedor[v.vendedor] = { unidades: 0, monto: 0 };
+                    porVendedor[v.vendedor].unidades += v.cantidad;
+                    porVendedor[v.vendedor].monto += (v.monto || 0);
+                });
+                const rankingOrdenado = Object.entries(porVendedor).sort((a, b) => b[1].monto - a[1].monto);
+
+                if (rankingOrdenado.length > 0) {
+                    ranking.innerHTML = rankingOrdenado.map(([nombre, stats], idx) => `
+                        <div class="flex items-center justify-between gap-3 p-3 rounded-xl bg-black/30 border border-gray-800">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="w-8 h-8 rounded-full bg-bhPurple/10 text-bhPurple flex items-center justify-center text-xs font-black shrink-0">${idx + 1}</div>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-bold text-white truncate">${escaparHtml(nombre)}</p>
+                                    <p class="text-xs text-gray-500">${stats.unidades} unidad${stats.unidades === 1 ? '' : 'es'}</p>
+                                </div>
+                            </div>
+                            <span class="text-sm font-black text-bhGreen shrink-0">S/ ${stats.monto.toFixed(2)}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    ranking.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">Sin ventas registradas hoy.</p>';
+                }
+
+                document.getElementById('vm-ultima-actualizacion').innerText = `Última actualización: ${new Date().toLocaleTimeString('es-ES')}`;
+
+            } catch (err) {
+                console.error("Error cargando Ventas Móviles:", err);
+                if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-gray-500">Error al cargar las ventas móviles.</td></tr>';
+                if (ranking) ranking.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">Error al cargar.</p>';
             }
         }
 
