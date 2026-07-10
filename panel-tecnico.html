@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BlackHouse OS | Taller</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#7c3aed">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="BlackHouse OS">
+    <link rel="apple-touch-icon" href="/icon-512.png">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        bhDark: '#050505',
+                        bhCard: '#101010',
+                        bhPurple: '#7c3aed',
+                        bhGreen: '#10b981',
+                        bhRed: '#ef4444'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .view-panel { display: none; animation: fadeIn 0.25s ease; }
+        .view-panel.active { display: block; }
+        .tab-btn.active { background: rgba(124,58,237,0.2); color: white; border-color: #7c3aed; }
+        .toast { animation: fadeIn 0.2s ease; }
+        input, select, textarea { color-scheme: dark; }
+    </style>
+</head>
+<body class="bg-bhDark text-gray-100 font-sans antialiased min-h-screen">
+
+    <!-- HEADER -->
+    <header class="sticky top-0 z-20 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-gray-800/50 px-4 py-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <span class="text-lg font-black tracking-wider text-white">BlackHouse<span class="text-bhPurple">OS</span></span>
+                <p class="text-xs text-bhGreen font-mono mt-0.5"><i class="fa-solid fa-circle-dot animate-pulse text-[9px]"></i> Taller</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <span id="nombre-tecnico" class="text-sm text-gray-300 font-semibold"></span>
+                <button onclick="cerrarSesionTecnico()" class="w-9 h-9 rounded-full bg-white/5 hover:bg-red-500/20 text-red-400 flex items-center justify-center transition">
+                    <i class="fa-solid fa-arrow-right-from-bracket text-sm"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- TABS -->
+        <div class="mt-4 grid grid-cols-2 gap-2">
+            <button id="tab-btn-ingreso" class="tab-btn active px-3 py-2.5 rounded-xl text-xs font-bold border border-gray-800 text-gray-400 transition" onclick="cambiarTab('ingreso')">
+                <i class="fa-solid fa-mobile-screen-button mr-1.5"></i> Ingresar Equipo
+            </button>
+            <button id="tab-btn-stock" class="tab-btn px-3 py-2.5 rounded-xl text-xs font-bold border border-gray-800 text-gray-400 transition" onclick="cambiarTab('stock')">
+                <i class="fa-solid fa-boxes-stacked mr-1.5"></i> Stock Rápido
+            </button>
+        </div>
+    </header>
+
+    <main class="p-4 pb-24">
+
+        <!-- ========================= VISTA: INGRESAR EQUIPO ========================= -->
+        <div id="view-ingreso" class="view-panel active">
+            <form id="form-ingreso" onsubmit="return false;" class="space-y-4">
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Cliente</label>
+                    <input id="ing-cliente" type="text" required placeholder="Nombre del cliente"
+                        class="w-full mt-1.5 bg-bhCard border border-gray-800 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-bhPurple/60">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Teléfono</label>
+                    <input id="ing-telefono" type="tel" placeholder="999 999 999"
+                        class="w-full mt-1.5 bg-bhCard border border-gray-800 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-bhPurple/60">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Modelo del equipo</label>
+                    <input id="ing-modelo" type="text" required placeholder="Ej: iPhone 12, Galaxy A54..."
+                        class="w-full mt-1.5 bg-bhCard border border-gray-800 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-bhPurple/60">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">IMEI / N° de serie</label>
+                    <input id="ing-imei" type="text" placeholder="Opcional"
+                        class="w-full mt-1.5 bg-bhCard border border-gray-800 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-bhPurple/60">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Falla reportada</label>
+                    <textarea id="ing-falla" required rows="3" placeholder="Ej: se cayó al agua, no enciende..."
+                        class="w-full mt-1.5 bg-bhCard border border-gray-800 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-bhPurple/60 resize-none"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Costo estimado</label>
+                        <input id="ing-costo" type="number" min="0" step="0.01" placeholder="0.00"
+                            class="w-full mt-1.5 bg-bhCard border border-gray-800 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-bhPurple/60">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Adelanto</label>
+                        <input id="ing-adelanto" type="number" min="0" step="0.01" placeholder="0.00"
+                            class="w-full mt-1.5 bg-bhCard border border-gray-800 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-bhPurple/60">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Fecha estimada de entrega</label>
+                    <input id="ing-fecha" type="date"
+                        class="w-full mt-1.5 bg-bhCard border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-bhPurple/60">
+                </div>
+
+                <button onclick="registrarIngreso()" id="btn-registrar-ingreso"
+                    class="w-full py-4 rounded-xl bg-bhPurple hover:opacity-90 text-white font-bold text-sm mt-2">
+                    <i class="fa-solid fa-clipboard-check mr-2"></i> Registrar ingreso
+                </button>
+            </form>
+        </div>
+
+        <!-- ========================= VISTA: STOCK RÁPIDO ========================= -->
+        <div id="view-stock" class="view-panel">
+            <div class="relative mb-4">
+                <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                <input id="buscador-stock" type="text" placeholder="Buscar producto por nombre o SKU..."
+                    oninput="filtrarStock()"
+                    class="w-full bg-bhCard border border-gray-800 rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-bhPurple/60">
+            </div>
+            <div id="estado-carga-stock" class="text-center text-gray-500 text-sm py-10">
+                <i class="fa-solid fa-spinner fa-spin mr-2"></i> Cargando stock...
+            </div>
+            <div id="lista-stock" class="space-y-2"></div>
+            <div id="stock-sin-resultados" class="hidden text-center text-gray-500 text-sm py-10">
+                <i class="fa-solid fa-box-open text-2xl mb-2 block"></i> No se encontraron productos.
+            </div>
+        </div>
+
+    </main>
+
+    <div id="toast-container" class="fixed bottom-4 left-4 right-4 z-40 flex flex-col items-center gap-2"></div>
+
+    <script>
+        // --- GUARDIA DE SEGURIDAD ---
+        const rol = localStorage.getItem('web_rol');
+        const token = localStorage.getItem('web_token');
+        if (!token) { window.location.href = 'index.html'; }
+        if (rol === 'dueno') { window.location.href = 'panel.html'; }
+        if (rol === 'vendedor') { window.location.href = 'panel-vendedor.html'; }
+
+        document.getElementById('nombre-tecnico').textContent = localStorage.getItem('web_user') || '';
+
+        function cerrarSesionTecnico() {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+
+        function mostrarToast(msg, tipo) {
+            const cont = document.getElementById('toast-container');
+            const el = document.createElement('div');
+            const colores = { success: 'bg-bhGreen text-black', error: 'bg-bhRed text-white', info: 'bg-bhPurple text-white' };
+            el.className = 'toast px-4 py-3 rounded-xl text-sm font-semibold shadow-xl ' + (colores[tipo] || colores.info);
+            el.textContent = msg;
+            cont.appendChild(el);
+            setTimeout(() => el.remove(), 3000);
+        }
+
+        async function llamarApi(body) {
+            const res = await fetch('/api/db', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify(body)
+            });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error || 'Error de red');
+            return json;
+        }
+
+        // --- TABS ---
+        function cambiarTab(nombre) {
+            document.querySelectorAll('.view-panel').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('view-' + nombre).classList.add('active');
+            document.getElementById('tab-btn-' + nombre).classList.add('active');
+            if (nombre === 'stock' && stockProductos.length === 0) cargarStock();
+        }
+
+        // --- INGRESO DE EQUIPO ---
+        async function registrarIngreso() {
+            const cliente = document.getElementById('ing-cliente').value.trim();
+            const modelo = document.getElementById('ing-modelo').value.trim();
+            const falla = document.getElementById('ing-falla').value.trim();
+
+            if (!cliente || !modelo || !falla) {
+                mostrarToast('Completa cliente, modelo y falla (son obligatorios)', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('btn-registrar-ingreso');
+            btn.disabled = true;
+            btn.textContent = 'Registrando...';
+
+            try {
+                await llamarApi({
+                    action: 'insert',
+                    table: 'ordenes',
+                    data: {
+                        cliente,
+                        telefono: document.getElementById('ing-telefono').value.trim() || null,
+                        modelo,
+                        imei: document.getElementById('ing-imei').value.trim() || null,
+                        falla,
+                        costo: parseFloat(document.getElementById('ing-costo').value) || 0,
+                        adelanto: parseFloat(document.getElementById('ing-adelanto').value) || 0,
+                        fecha_cita: document.getElementById('ing-fecha').value || null,
+                        estado: 'Pendiente',
+                        bitacora: `Ingresado desde app móvil por ${localStorage.getItem('web_user')}`
+                    }
+                });
+
+                mostrarToast(`Equipo de ${cliente} registrado con éxito`, 'success');
+                document.getElementById('form-ingreso').reset();
+            } catch (e) {
+                mostrarToast('Error al registrar: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-clipboard-check mr-2"></i> Registrar ingreso';
+            }
+        }
+
+        // --- STOCK RÁPIDO (solo lectura, sin costos ni precio mayorista) ---
+        let stockProductos = [];
+
+        async function cargarStock() {
+            try {
+                const resp = await llamarApi({
+                    action: 'select',
+                    table: 'productos',
+                    select: 'id, nombre, sku, precio, stock, categoria, modelo_compatible',
+                    order: { column: 'nombre', ascending: true },
+                    limit: 2000
+                });
+                stockProductos = resp.data || [];
+                document.getElementById('estado-carga-stock').classList.add('hidden');
+                renderizarStock(stockProductos);
+            } catch (e) {
+                document.getElementById('estado-carga-stock').innerHTML = '<i class="fa-solid fa-triangle-exclamation text-bhRed mr-2"></i> No se pudo cargar el stock: ' + e.message;
+            }
+        }
+
+        function escaparHtml(txt) {
+            const d = document.createElement('div');
+            d.textContent = txt || '';
+            return d.innerHTML;
+        }
+
+        function renderizarStock(lista) {
+            const cont = document.getElementById('lista-stock');
+            const vacio = document.getElementById('stock-sin-resultados');
+            if (lista.length === 0) {
+                cont.innerHTML = '';
+                vacio.classList.remove('hidden');
+                return;
+            }
+            vacio.classList.add('hidden');
+            cont.innerHTML = lista.map(p => {
+                const stockColor = p.stock <= 0 ? 'text-bhRed' : (p.stock <= 5 ? 'text-yellow-400' : 'text-bhGreen');
+                return `
+                <div class="bg-bhCard border border-gray-800 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+                    <div class="min-w-0 flex-1">
+                        <p class="font-bold text-white text-sm truncate">${escaparHtml(p.nombre)}</p>
+                        <p class="text-xs text-gray-500 mt-0.5">${escaparHtml(p.sku || 'sin SKU')} ${p.modelo_compatible ? '· ' + escaparHtml(p.modelo_compatible) : ''}</p>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <p class="text-sm font-bold text-white">S/ ${Number(p.precio || 0).toFixed(2)}</p>
+                        <p class="text-xs font-bold ${stockColor}">stock: ${p.stock}</p>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function filtrarStock() {
+            const term = document.getElementById('buscador-stock').value.trim().toLowerCase();
+            if (!term) return renderizarStock(stockProductos);
+            const filtrado = stockProductos.filter(p =>
+                (p.nombre || '').toLowerCase().includes(term) ||
+                (p.sku || '').toLowerCase().includes(term) ||
+                (p.modelo_compatible || '').toLowerCase().includes(term)
+            );
+            renderizarStock(filtrado);
+        }
+    </script>
+</body>
+</html>

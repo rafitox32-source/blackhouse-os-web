@@ -995,8 +995,13 @@
                     localStorage.setItem('web_token', result.token);
                     localStorage.setItem('web_empresa_id', result.empresa_id);
                     
+                    const destinoPorRol = {
+                        dueno: 'panel.html',
+                        vendedor: 'panel-vendedor.html',
+                        tecnico: 'panel-tecnico.html'
+                    };
                     setTimeout(() => {
-                        window.location.href = 'panel.html';
+                        window.location.href = destinoPorRol[result.rol] || 'panel.html';
                     }, 800);
                 }
             } catch (err) {

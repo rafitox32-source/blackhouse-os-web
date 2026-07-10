@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BlackHouse OS | Ventas</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#7c3aed">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="BlackHouse OS">
+    <link rel="apple-touch-icon" href="/icon-512.png">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        bhDark: '#050505',
+                        bhCard: '#101010',
+                        bhPurple: '#7c3aed',
+                        bhGreen: '#10b981',
+                        bhRed: '#ef4444'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .product-card { animation: fadeIn 0.25s ease; }
+        .toast { animation: fadeIn 0.2s ease; }
+    </style>
+</head>
+<body class="bg-bhDark text-gray-100 font-sans antialiased min-h-screen">
+
+    <!-- HEADER -->
+    <header class="sticky top-0 z-20 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-gray-800/50 px-4 py-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <span class="text-lg font-black tracking-wider text-white">BlackHouse<span class="text-bhPurple">OS</span></span>
+                <p class="text-xs text-bhGreen font-mono mt-0.5"><i class="fa-solid fa-circle-dot animate-pulse text-[9px]"></i> Ventas</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <span id="nombre-vendedor" class="text-sm text-gray-300 font-semibold"></span>
+                <button onclick="cerrarSesionVendedor()" class="w-9 h-9 rounded-full bg-white/5 hover:bg-red-500/20 text-red-400 flex items-center justify-center transition">
+                    <i class="fa-solid fa-arrow-right-from-bracket text-sm"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- BUSCADOR -->
+        <div class="mt-4 relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
+            <input id="buscador" type="text" placeholder="Buscar producto por nombre o SKU..."
+                oninput="filtrarProductos()"
+                class="w-full bg-bhCard border border-gray-800 rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-bhPurple/60">
+        </div>
+    </header>
+
+    <!-- LISTA DE PRODUCTOS -->
+    <main class="p-4 pb-24">
+        <div id="estado-carga" class="text-center text-gray-500 text-sm py-10">
+            <i class="fa-solid fa-spinner fa-spin mr-2"></i> Cargando catálogo...
+        </div>
+        <div id="lista-productos" class="space-y-3"></div>
+        <div id="sin-resultados" class="hidden text-center text-gray-500 text-sm py-10">
+            <i class="fa-solid fa-box-open text-2xl mb-2 block"></i> No se encontraron productos.
+        </div>
+    </main>
+
+    <!-- MODAL DE VENTA -->
+    <div id="modal-venta" class="hidden fixed inset-0 z-30 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+        <div class="bg-bhCard border border-gray-800 rounded-2xl w-full max-w-sm p-6">
+            <h3 class="text-lg font-bold text-white mb-1" id="modal-producto-nombre">-</h3>
+            <p class="text-xs text-gray-500 mb-4">SKU: <span id="modal-producto-sku">-</span> · Stock disponible: <span id="modal-producto-stock">0</span></p>
+
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Cantidad a vender</label>
+            <div class="flex items-center gap-3 mt-2">
+                <button onclick="ajustarCantidad(-1)" class="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 text-white text-lg font-bold">-</button>
+                <input id="modal-cantidad" type="number" min="1" value="1" class="flex-1 bg-black/40 border border-gray-800 rounded-lg text-center py-2 text-white font-bold">
+                <button onclick="ajustarCantidad(1)" class="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 text-white text-lg font-bold">+</button>
+            </div>
+
+            <p class="text-center text-2xl font-black text-bhGreen mt-4" id="modal-total">S/ 0.00</p>
+
+            <div class="flex gap-3 mt-6">
+                <button onclick="cerrarModalVenta()" class="flex-1 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 font-semibold text-sm">Cancelar</button>
+                <button onclick="confirmarVenta()" id="btn-confirmar-venta" class="flex-1 py-3 rounded-xl bg-bhGreen hover:opacity-90 text-black font-bold text-sm">Confirmar venta</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="fixed bottom-4 left-4 right-4 z-40 flex flex-col items-center gap-2"></div>
+
+    <script>
+        // --- GUARDIA DE SEGURIDAD ---
+        const rol = localStorage.getItem('web_rol');
+        const token = localStorage.getItem('web_token');
+        if (!token) { window.location.href = 'index.html'; }
+        if (rol === 'dueno') { window.location.href = 'panel.html'; }
+        if (rol === 'tecnico') { window.location.href = 'panel-tecnico.html'; }
+
+        document.getElementById('nombre-vendedor').textContent = localStorage.getItem('web_user') || '';
+
+        function cerrarSesionVendedor() {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+
+        function mostrarToast(msg, tipo) {
+            const cont = document.getElementById('toast-container');
+            const el = document.createElement('div');
+            const colores = { success: 'bg-bhGreen text-black', error: 'bg-bhRed text-white', info: 'bg-bhPurple text-white' };
+            el.className = 'toast px-4 py-3 rounded-xl text-sm font-semibold shadow-xl ' + (colores[tipo] || colores.info);
+            el.textContent = msg;
+            cont.appendChild(el);
+            setTimeout(() => el.remove(), 3000);
+        }
+
+        async function llamarApi(body) {
+            const res = await fetch('/api/db', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify(body)
+            });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error || 'Error de red');
+            return json;
+        }
+
+        // --- CATÁLOGO ---
+        let productos = [];
+        let productoSeleccionado = null;
+
+        async function cargarProductos() {
+            try {
+                const resp = await llamarApi({
+                    action: 'select',
+                    table: 'productos',
+                    select: 'id, nombre, sku, precio, stock, categoria, subcategoria, modelo_compatible',
+                    order: { column: 'nombre', ascending: true },
+                    limit: 2000
+                });
+                productos = resp.data || [];
+                document.getElementById('estado-carga').classList.add('hidden');
+                renderizarProductos(productos);
+            } catch (e) {
+                document.getElementById('estado-carga').innerHTML = '<i class="fa-solid fa-triangle-exclamation text-bhRed mr-2"></i> No se pudo cargar el catálogo: ' + e.message;
+            }
+        }
+
+        function renderizarProductos(lista) {
+            const cont = document.getElementById('lista-productos');
+            const vacio = document.getElementById('sin-resultados');
+            if (lista.length === 0) {
+                cont.innerHTML = '';
+                vacio.classList.remove('hidden');
+                return;
+            }
+            vacio.classList.add('hidden');
+            cont.innerHTML = lista.map(p => {
+                const stockBajo = p.stock <= 0;
+                const stockColor = p.stock <= 0 ? 'text-bhRed' : (p.stock <= 5 ? 'text-yellow-400' : 'text-bhGreen');
+                return `
+                <div class="product-card bg-bhCard border border-gray-800 rounded-xl p-4 flex items-center justify-between gap-3">
+                    <div class="min-w-0 flex-1">
+                        <p class="font-bold text-white text-sm truncate">${escaparHtml(p.nombre)}</p>
+                        <p class="text-xs text-gray-500 mt-0.5">${escaparHtml(p.sku || 'sin SKU')} ${p.modelo_compatible ? '· ' + escaparHtml(p.modelo_compatible) : ''}</p>
+                        <p class="text-sm font-bold text-white mt-1">S/ ${Number(p.precio || 0).toFixed(2)} <span class="font-normal ${stockColor} text-xs">· stock: ${p.stock}</span></p>
+                    </div>
+                    <button ${stockBajo ? 'disabled' : ''} onclick="abrirModalVenta(${p.id})"
+                        class="shrink-0 px-4 py-2.5 rounded-xl text-sm font-bold ${stockBajo ? 'bg-white/5 text-gray-600 cursor-not-allowed' : 'bg-bhPurple hover:opacity-90 text-white'}">
+                        ${stockBajo ? 'Sin stock' : 'Vender'}
+                    </button>
+                </div>`;
+            }).join('');
+        }
+
+        function escaparHtml(txt) {
+            const d = document.createElement('div');
+            d.textContent = txt || '';
+            return d.innerHTML;
+        }
+
+        function filtrarProductos() {
+            const term = document.getElementById('buscador').value.trim().toLowerCase();
+            if (!term) return renderizarProductos(productos);
+            const filtrado = productos.filter(p =>
+                (p.nombre || '').toLowerCase().includes(term) ||
+                (p.sku || '').toLowerCase().includes(term) ||
+                (p.modelo_compatible || '').toLowerCase().includes(term)
+            );
+            renderizarProductos(filtrado);
+        }
+
+        // --- MODAL DE VENTA ---
+        function abrirModalVenta(id) {
+            productoSeleccionado = productos.find(p => p.id === id);
+            if (!productoSeleccionado) return;
+            document.getElementById('modal-producto-nombre').textContent = productoSeleccionado.nombre;
+            document.getElementById('modal-producto-sku').textContent = productoSeleccionado.sku || '-';
+            document.getElementById('modal-producto-stock').textContent = productoSeleccionado.stock;
+            document.getElementById('modal-cantidad').value = 1;
+            document.getElementById('modal-cantidad').max = productoSeleccionado.stock;
+            actualizarTotalModal();
+            document.getElementById('modal-venta').classList.remove('hidden');
+        }
+
+        function cerrarModalVenta() {
+            document.getElementById('modal-venta').classList.add('hidden');
+            productoSeleccionado = null;
+        }
+
+        function ajustarCantidad(delta) {
+            const input = document.getElementById('modal-cantidad');
+            let val = parseInt(input.value || '1') + delta;
+            val = Math.max(1, Math.min(val, productoSeleccionado.stock));
+            input.value = val;
+            actualizarTotalModal();
+        }
+
+        document.getElementById('modal-cantidad').addEventListener('input', actualizarTotalModal);
+
+        function actualizarTotalModal() {
+            if (!productoSeleccionado) return;
+            let cant = parseInt(document.getElementById('modal-cantidad').value || '0');
+            if (cant < 1) cant = 1;
+            if (cant > productoSeleccionado.stock) cant = productoSeleccionado.stock;
+            document.getElementById('modal-cantidad').value = cant;
+            const total = cant * Number(productoSeleccionado.precio || 0);
+            document.getElementById('modal-total').textContent = 'S/ ' + total.toFixed(2);
+        }
+
+        async function confirmarVenta() {
+            if (!productoSeleccionado) return;
+            const cantidad = parseInt(document.getElementById('modal-cantidad').value || '0');
+            if (cantidad < 1 || cantidad > productoSeleccionado.stock) {
+                mostrarToast('Cantidad inválida', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('btn-confirmar-venta');
+            btn.disabled = true;
+            btn.textContent = 'Registrando...';
+
+            try {
+                const nuevoStock = productoSeleccionado.stock - cantidad;
+
+                // 1. Registrar el movimiento (auditoría de la venta)
+                await llamarApi({
+                    action: 'insert',
+                    table: 'movimientos_stock',
+                    data: {
+                        sku: productoSeleccionado.sku || 'SIN-SKU',
+                        cantidad: -cantidad,
+                        nota: `Venta móvil - ${productoSeleccionado.nombre} x${cantidad} (vendedor: ${localStorage.getItem('web_user')})`
+                    }
+                });
+
+                // 2. Descontar el stock del producto
+                await llamarApi({
+                    action: 'update',
+                    table: 'productos',
+                    data: { stock: nuevoStock },
+                    match: { id: productoSeleccionado.id }
+                });
+
+                // 3. Reflejar el cambio en memoria/UI
+                productoSeleccionado.stock = nuevoStock;
+                filtrarProductos();
+                mostrarToast(`Venta registrada: ${productoSeleccionado.nombre} x${cantidad}`, 'success');
+                cerrarModalVenta();
+            } catch (e) {
+                mostrarToast('Error al registrar la venta: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Confirmar venta';
+            }
+        }
+
+        cargarProductos();
+    </script>
+</body>
+</html>

@@ -458,8 +458,10 @@
         // --- GUARDIA DE SEGURIDAD ---
         function verificarAccesoDueno() {
             const rol = localStorage.getItem('web_rol');
+            if (rol === 'vendedor') { window.location.href = 'panel-vendedor.html'; return; }
+            if (rol === 'tecnico') { window.location.href = 'panel-tecnico.html'; return; }
             if (rol !== 'dueno') {
-                alert("Acceso denegado: Esta plataforma es exclusiva para administradores.");
+                alert("Acceso denegado: inicia sesión de nuevo.");
                 localStorage.clear();
                 window.location.href = 'index.html';
             }
