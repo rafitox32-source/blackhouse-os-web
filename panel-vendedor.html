@@ -34,8 +34,12 @@
     </script>
     <style>
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
         .product-card { animation: fadeIn 0.25s ease; }
+        .cart-item { animation: fadeIn 0.2s ease; }
         .toast { animation: fadeIn 0.2s ease; }
+        .cart-bar { animation: popIn 0.2s ease; }
+        #cart-badge { animation: popIn 0.2s ease; }
     </style>
 </head>
 <body class="bg-bhDark text-gray-100 font-sans antialiased min-h-screen">
@@ -65,7 +69,7 @@
     </header>
 
     <!-- LISTA DE PRODUCTOS -->
-    <main class="p-4 pb-24">
+    <main class="p-4 pb-28">
         <div id="estado-carga" class="text-center text-gray-500 text-sm py-10">
             <i class="fa-solid fa-spinner fa-spin mr-2"></i> Cargando catálogo...
         </div>
@@ -75,13 +79,27 @@
         </div>
     </main>
 
-    <!-- MODAL DE VENTA -->
+    <!-- BARRA FLOTANTE DEL CARRITO -->
+    <div id="cart-bar" class="cart-bar hidden fixed bottom-4 left-4 right-4 z-30">
+        <button onclick="abrirCarrito()" class="w-full bg-bhPurple hover:opacity-90 text-white rounded-2xl px-5 py-4 shadow-2xl flex items-center justify-between">
+            <span class="flex items-center gap-2 font-bold text-sm">
+                <span class="relative">
+                    <i class="fa-solid fa-cart-shopping text-lg"></i>
+                    <span id="cart-badge" class="absolute -top-2 -right-2 bg-bhGreen text-black text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center">0</span>
+                </span>
+                Ver carrito
+            </span>
+            <span id="cart-bar-total" class="font-black">S/ 0.00</span>
+        </button>
+    </div>
+
+    <!-- MODAL: AGREGAR AL CARRITO -->
     <div id="modal-venta" class="hidden fixed inset-0 z-30 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
         <div class="bg-bhCard border border-gray-800 rounded-2xl w-full max-w-sm p-6">
             <h3 class="text-lg font-bold text-white mb-1" id="modal-producto-nombre">-</h3>
             <p class="text-xs text-gray-500 mb-4">SKU: <span id="modal-producto-sku">-</span> · Stock disponible: <span id="modal-producto-stock">0</span></p>
 
-            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Cantidad a vender</label>
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Cantidad</label>
             <div class="flex items-center gap-3 mt-2">
                 <button onclick="ajustarCantidad(-1)" class="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 text-white text-lg font-bold">-</button>
                 <input id="modal-cantidad" type="number" min="1" value="1" class="flex-1 bg-black/40 border border-gray-800 rounded-lg text-center py-2 text-white font-bold">
@@ -92,12 +110,45 @@
 
             <div class="flex gap-3 mt-6">
                 <button onclick="cerrarModalVenta()" class="flex-1 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 font-semibold text-sm">Cancelar</button>
-                <button onclick="confirmarVenta()" id="btn-confirmar-venta" class="flex-1 py-3 rounded-xl bg-bhGreen hover:opacity-90 text-black font-bold text-sm">Confirmar venta</button>
+                <button onclick="agregarAlCarrito()" class="flex-1 py-3 rounded-xl bg-bhPurple hover:opacity-90 text-white font-bold text-sm">
+                    <i class="fa-solid fa-cart-plus mr-1"></i> Agregar
+                </button>
             </div>
         </div>
     </div>
 
-    <div id="toast-container" class="fixed bottom-4 left-4 right-4 z-40 flex flex-col items-center gap-2"></div>
+    <!-- MODAL: CARRITO -->
+    <div id="modal-carrito" class="hidden fixed inset-0 z-40 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+        <div class="bg-bhCard border border-gray-800 rounded-2xl w-full max-w-md max-h-[85vh] flex flex-col">
+            <div class="p-5 border-b border-gray-800 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-white"><i class="fa-solid fa-cart-shopping text-bhPurple mr-2"></i>Carrito</h3>
+                <button onclick="cerrarCarrito()" class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-gray-400 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div id="carrito-items" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+
+            <div id="carrito-vacio" class="hidden flex-1 flex items-center justify-center text-gray-500 text-sm py-10">
+                <div class="text-center">
+                    <i class="fa-solid fa-cart-shopping text-2xl mb-2 block"></i> El carrito está vacío
+                </div>
+            </div>
+
+            <div class="p-5 border-t border-gray-800">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="text-sm text-gray-400 font-semibold">Total</span>
+                    <span id="carrito-total" class="text-2xl font-black text-bhGreen">S/ 0.00</span>
+                </div>
+                <button onclick="confirmarVentaCarrito()" id="btn-confirmar-carrito"
+                    class="w-full py-4 rounded-xl bg-bhGreen hover:opacity-90 text-black font-bold text-sm disabled:opacity-40">
+                    Confirmar venta
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="fixed bottom-4 left-4 right-4 z-50 flex flex-col items-center gap-2"></div>
 
     <script>
         // --- GUARDIA DE SEGURIDAD ---
@@ -135,6 +186,12 @@
             return json;
         }
 
+        function escaparHtml(txt) {
+            const d = document.createElement('div');
+            d.textContent = txt || '';
+            return d.innerHTML;
+        }
+
         // --- CATÁLOGO ---
         let productos = [];
         let productoSeleccionado = null;
@@ -156,6 +213,12 @@
             }
         }
 
+        // Stock disponible para vender = stock real menos lo que ya esta en el carrito
+        function stockDisponible(producto) {
+            const enCarrito = carrito.find(i => i.id === producto.id);
+            return producto.stock - (enCarrito ? enCarrito.cantidad : 0);
+        }
+
         function renderizarProductos(lista) {
             const cont = document.getElementById('lista-productos');
             const vacio = document.getElementById('sin-resultados');
@@ -166,27 +229,22 @@
             }
             vacio.classList.add('hidden');
             cont.innerHTML = lista.map(p => {
-                const stockBajo = p.stock <= 0;
-                const stockColor = p.stock <= 0 ? 'text-bhRed' : (p.stock <= 5 ? 'text-yellow-400' : 'text-bhGreen');
+                const disponible = stockDisponible(p);
+                const stockBajo = disponible <= 0;
+                const stockColor = disponible <= 0 ? 'text-bhRed' : (disponible <= 5 ? 'text-yellow-400' : 'text-bhGreen');
                 return `
                 <div class="product-card bg-bhCard border border-gray-800 rounded-xl p-4 flex items-center justify-between gap-3">
                     <div class="min-w-0 flex-1">
                         <p class="font-bold text-white text-sm truncate">${escaparHtml(p.nombre)}</p>
                         <p class="text-xs text-gray-500 mt-0.5">${escaparHtml(p.sku || 'sin SKU')} ${p.modelo_compatible ? '· ' + escaparHtml(p.modelo_compatible) : ''}</p>
-                        <p class="text-sm font-bold text-white mt-1">S/ ${Number(p.precio || 0).toFixed(2)} <span class="font-normal ${stockColor} text-xs">· stock: ${p.stock}</span></p>
+                        <p class="text-sm font-bold text-white mt-1">S/ ${Number(p.precio || 0).toFixed(2)} <span class="font-normal ${stockColor} text-xs">· disponible: ${disponible}</span></p>
                     </div>
                     <button ${stockBajo ? 'disabled' : ''} onclick="abrirModalVenta(${p.id})"
                         class="shrink-0 px-4 py-2.5 rounded-xl text-sm font-bold ${stockBajo ? 'bg-white/5 text-gray-600 cursor-not-allowed' : 'bg-bhPurple hover:opacity-90 text-white'}">
-                        ${stockBajo ? 'Sin stock' : 'Vender'}
+                        ${stockBajo ? 'Sin stock' : 'Agregar'}
                     </button>
                 </div>`;
             }).join('');
-        }
-
-        function escaparHtml(txt) {
-            const d = document.createElement('div');
-            d.textContent = txt || '';
-            return d.innerHTML;
         }
 
         function filtrarProductos() {
@@ -200,15 +258,16 @@
             renderizarProductos(filtrado);
         }
 
-        // --- MODAL DE VENTA ---
+        // --- MODAL: AGREGAR PRODUCTO ---
         function abrirModalVenta(id) {
             productoSeleccionado = productos.find(p => p.id === id);
             if (!productoSeleccionado) return;
+            const disponible = stockDisponible(productoSeleccionado);
             document.getElementById('modal-producto-nombre').textContent = productoSeleccionado.nombre;
             document.getElementById('modal-producto-sku').textContent = productoSeleccionado.sku || '-';
-            document.getElementById('modal-producto-stock').textContent = productoSeleccionado.stock;
+            document.getElementById('modal-producto-stock').textContent = disponible;
             document.getElementById('modal-cantidad').value = 1;
-            document.getElementById('modal-cantidad').max = productoSeleccionado.stock;
+            document.getElementById('modal-cantidad').max = disponible;
             actualizarTotalModal();
             document.getElementById('modal-venta').classList.remove('hidden');
         }
@@ -220,8 +279,9 @@
 
         function ajustarCantidad(delta) {
             const input = document.getElementById('modal-cantidad');
+            const disponible = stockDisponible(productoSeleccionado);
             let val = parseInt(input.value || '1') + delta;
-            val = Math.max(1, Math.min(val, productoSeleccionado.stock));
+            val = Math.max(1, Math.min(val, disponible));
             input.value = val;
             actualizarTotalModal();
         }
@@ -230,55 +290,187 @@
 
         function actualizarTotalModal() {
             if (!productoSeleccionado) return;
+            const disponible = stockDisponible(productoSeleccionado);
             let cant = parseInt(document.getElementById('modal-cantidad').value || '0');
             if (cant < 1) cant = 1;
-            if (cant > productoSeleccionado.stock) cant = productoSeleccionado.stock;
+            if (cant > disponible) cant = disponible;
             document.getElementById('modal-cantidad').value = cant;
             const total = cant * Number(productoSeleccionado.precio || 0);
             document.getElementById('modal-total').textContent = 'S/ ' + total.toFixed(2);
         }
 
-        async function confirmarVenta() {
+        // --- CARRITO ---
+        let carrito = []; // [{ id, nombre, sku, precio, cantidad }]
+
+        function agregarAlCarrito() {
             if (!productoSeleccionado) return;
             const cantidad = parseInt(document.getElementById('modal-cantidad').value || '0');
-            if (cantidad < 1 || cantidad > productoSeleccionado.stock) {
+            const disponible = stockDisponible(productoSeleccionado);
+            if (cantidad < 1 || cantidad > disponible) {
                 mostrarToast('Cantidad inválida', 'error');
                 return;
             }
 
-            const btn = document.getElementById('btn-confirmar-venta');
+            const existente = carrito.find(i => i.id === productoSeleccionado.id);
+            if (existente) {
+                existente.cantidad += cantidad;
+            } else {
+                carrito.push({
+                    id: productoSeleccionado.id,
+                    nombre: productoSeleccionado.nombre,
+                    sku: productoSeleccionado.sku,
+                    precio: Number(productoSeleccionado.precio || 0),
+                    cantidad
+                });
+            }
+
+            mostrarToast(`${productoSeleccionado.nombre} agregado al carrito`, 'success');
+            cerrarModalVenta();
+            filtrarProductos();
+            actualizarBarraCarrito();
+        }
+
+        function actualizarBarraCarrito() {
+            const bar = document.getElementById('cart-bar');
+            const totalItems = carrito.reduce((s, i) => s + i.cantidad, 0);
+            const totalMonto = carrito.reduce((s, i) => s + i.cantidad * i.precio, 0);
+            if (totalItems === 0) {
+                bar.classList.add('hidden');
+                return;
+            }
+            bar.classList.remove('hidden');
+            document.getElementById('cart-badge').textContent = totalItems;
+            document.getElementById('cart-bar-total').textContent = 'S/ ' + totalMonto.toFixed(2);
+        }
+
+        function abrirCarrito() {
+            renderizarCarrito();
+            document.getElementById('modal-carrito').classList.remove('hidden');
+        }
+
+        function cerrarCarrito() {
+            document.getElementById('modal-carrito').classList.add('hidden');
+        }
+
+        function renderizarCarrito() {
+            const cont = document.getElementById('carrito-items');
+            const vacio = document.getElementById('carrito-vacio');
+            const btnConfirmar = document.getElementById('btn-confirmar-carrito');
+
+            if (carrito.length === 0) {
+                cont.innerHTML = '';
+                vacio.classList.remove('hidden');
+                btnConfirmar.disabled = true;
+                document.getElementById('carrito-total').textContent = 'S/ 0.00';
+                return;
+            }
+            vacio.classList.add('hidden');
+            btnConfirmar.disabled = false;
+
+            cont.innerHTML = carrito.map((item, idx) => `
+                <div class="cart-item bg-black/30 border border-gray-800 rounded-xl p-3 flex items-center justify-between gap-3">
+                    <div class="min-w-0 flex-1">
+                        <p class="font-semibold text-white text-sm truncate">${escaparHtml(item.nombre)}</p>
+                        <p class="text-xs text-gray-500">S/ ${item.precio.toFixed(2)} c/u</p>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <button onclick="cambiarCantidadCarrito(${idx}, -1)" class="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 text-white text-sm font-bold">-</button>
+                        <span class="w-6 text-center text-sm font-bold text-white">${item.cantidad}</span>
+                        <button onclick="cambiarCantidadCarrito(${idx}, 1)" class="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 text-white text-sm font-bold">+</button>
+                        <button onclick="quitarDelCarrito(${idx})" class="w-7 h-7 rounded-lg bg-bhRed/10 hover:bg-bhRed/20 text-bhRed text-sm ml-1">
+                            <i class="fa-solid fa-trash text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            const total = carrito.reduce((s, i) => s + i.cantidad * i.precio, 0);
+            document.getElementById('carrito-total').textContent = 'S/ ' + total.toFixed(2);
+        }
+
+        function cambiarCantidadCarrito(idx, delta) {
+            const item = carrito[idx];
+            const producto = productos.find(p => p.id === item.id);
+            const stockReal = producto ? producto.stock : item.cantidad;
+            const otrosEnCarrito = 0; // este item es el unico que cuenta contra si mismo
+            const maxPermitido = stockReal;
+
+            const nuevaCantidad = item.cantidad + delta;
+            if (nuevaCantidad < 1) {
+                quitarDelCarrito(idx);
+                return;
+            }
+            if (nuevaCantidad > maxPermitido) {
+                mostrarToast('No hay más stock disponible de este producto', 'error');
+                return;
+            }
+            item.cantidad = nuevaCantidad;
+            renderizarCarrito();
+            actualizarBarraCarrito();
+            filtrarProductos();
+        }
+
+        function quitarDelCarrito(idx) {
+            carrito.splice(idx, 1);
+            renderizarCarrito();
+            actualizarBarraCarrito();
+            filtrarProductos();
+            if (carrito.length === 0) cerrarCarrito();
+        }
+
+        async function confirmarVentaCarrito() {
+            if (carrito.length === 0) return;
+
+            const btn = document.getElementById('btn-confirmar-carrito');
             btn.disabled = true;
-            btn.textContent = 'Registrando...';
+            btn.textContent = 'Registrando venta...';
 
+            const procesados = [];
             try {
-                const nuevoStock = productoSeleccionado.stock - cantidad;
+                for (const item of carrito) {
+                    const producto = productos.find(p => p.id === item.id);
+                    if (!producto) throw new Error(`"${item.nombre}" ya no existe en el catálogo`);
+                    if (item.cantidad > producto.stock) throw new Error(`Stock insuficiente de "${item.nombre}" (quedan ${producto.stock})`);
 
-                // 1. Registrar el movimiento (auditoría de la venta)
-                await llamarApi({
-                    action: 'insert',
-                    table: 'movimientos_stock',
-                    data: {
-                        sku: productoSeleccionado.sku || 'SIN-SKU',
-                        cantidad: -cantidad,
-                        nota: `Venta móvil - ${productoSeleccionado.nombre} x${cantidad} (vendedor: ${localStorage.getItem('web_user')})`
-                    }
-                });
+                    const nuevoStock = producto.stock - item.cantidad;
 
-                // 2. Descontar el stock del producto
-                await llamarApi({
-                    action: 'update',
-                    table: 'productos',
-                    data: { stock: nuevoStock },
-                    match: { id: productoSeleccionado.id }
-                });
+                    await llamarApi({
+                        action: 'insert',
+                        table: 'movimientos_stock',
+                        data: {
+                            sku: item.sku || 'SIN-SKU',
+                            cantidad: -item.cantidad,
+                            nota: `Venta móvil - ${item.nombre} x${item.cantidad} (vendedor: ${localStorage.getItem('web_user')})`
+                        }
+                    });
 
-                // 3. Reflejar el cambio en memoria/UI
-                productoSeleccionado.stock = nuevoStock;
+                    await llamarApi({
+                        action: 'update',
+                        table: 'productos',
+                        data: { stock: nuevoStock },
+                        match: { id: item.id }
+                    });
+
+                    producto.stock = nuevoStock;
+                    procesados.push(item);
+                }
+
+                const totalVenta = carrito.reduce((s, i) => s + i.cantidad * i.precio, 0);
+                mostrarToast(`Venta registrada: ${carrito.length} producto(s), total S/ ${totalVenta.toFixed(2)}`, 'success');
+                carrito = [];
+                renderizarCarrito();
+                actualizarBarraCarrito();
                 filtrarProductos();
-                mostrarToast(`Venta registrada: ${productoSeleccionado.nombre} x${cantidad}`, 'success');
-                cerrarModalVenta();
+                cerrarCarrito();
             } catch (e) {
-                mostrarToast('Error al registrar la venta: ' + e.message, 'error');
+                // Los items en "procesados" ya descontaron stock antes del error;
+                // los quitamos del carrito para no venderlos dos veces, y dejamos
+                // el resto para que el vendedor reintente.
+                carrito = carrito.filter(i => !procesados.includes(i));
+                renderizarCarrito();
+                actualizarBarraCarrito();
+                filtrarProductos();
+                mostrarToast('Venta parcial - error: ' + e.message, 'error');
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Confirmar venta';
