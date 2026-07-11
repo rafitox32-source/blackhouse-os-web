@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>BlackHouse OS | Taller</title>
 
     <!-- PWA -->
@@ -44,7 +44,8 @@
 <body class="bg-bhDark text-gray-100 font-sans antialiased min-h-screen">
 
     <!-- HEADER -->
-    <header class="sticky top-0 z-20 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-gray-800/50 px-4 py-4">
+    <header class="sticky top-0 z-20 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-gray-800/50 px-4 py-4"
+        style="padding-top: calc(1rem + env(safe-area-inset-top)); padding-left: calc(1rem + env(safe-area-inset-left)); padding-right: calc(1rem + env(safe-area-inset-right));">
         <div class="flex items-center justify-between">
             <div>
                 <span class="text-lg font-black tracking-wider text-white">BlackHouse<span class="text-bhPurple">OS</span></span>
@@ -69,7 +70,7 @@
         </div>
     </header>
 
-    <main class="p-4 pb-24">
+    <main class="p-4 pb-24" style="padding-bottom: calc(6rem + env(safe-area-inset-bottom));">
 
         <!-- ========================= VISTA: INGRESAR EQUIPO ========================= -->
         <div id="view-ingreso" class="view-panel active">
@@ -143,7 +144,8 @@
 
     </main>
 
-    <div id="toast-container" class="fixed bottom-4 left-4 right-4 z-40 flex flex-col items-center gap-2"></div>
+    <div id="toast-container" class="fixed bottom-4 left-4 right-4 z-40 flex flex-col items-center gap-2"
+        style="bottom: calc(1rem + env(safe-area-inset-bottom));"></div>
 
     <script>
         // --- GUARDIA DE SEGURIDAD ---

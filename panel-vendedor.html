@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>BlackHouse OS | Ventas</title>
 
     <!-- PWA -->
@@ -45,7 +45,8 @@
 <body class="bg-bhDark text-gray-100 font-sans antialiased min-h-screen">
 
     <!-- HEADER -->
-    <header class="sticky top-0 z-20 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-gray-800/50 px-4 py-4">
+    <header class="sticky top-0 z-20 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-gray-800/50 px-4 py-4"
+        style="padding-top: calc(1rem + env(safe-area-inset-top)); padding-left: calc(1rem + env(safe-area-inset-left)); padding-right: calc(1rem + env(safe-area-inset-right));">
         <div class="flex items-center justify-between">
             <div>
                 <span class="text-lg font-black tracking-wider text-white">BlackHouse<span class="text-bhPurple">OS</span></span>
@@ -69,7 +70,7 @@
     </header>
 
     <!-- LISTA DE PRODUCTOS -->
-    <main class="p-4 pb-28">
+    <main class="p-4 pb-28" style="padding-bottom: calc(7rem + env(safe-area-inset-bottom));">
         <div id="estado-carga" class="text-center text-gray-500 text-sm py-10">
             <i class="fa-solid fa-spinner fa-spin mr-2"></i> Cargando catálogo...
         </div>
@@ -80,7 +81,8 @@
     </main>
 
     <!-- BARRA FLOTANTE DEL CARRITO -->
-    <div id="cart-bar" class="cart-bar hidden fixed bottom-4 left-4 right-4 z-30">
+    <div id="cart-bar" class="cart-bar hidden fixed bottom-4 left-4 right-4 z-30"
+        style="bottom: calc(1rem + env(safe-area-inset-bottom));">
         <button onclick="abrirCarrito()" class="w-full bg-bhPurple hover:opacity-90 text-white rounded-2xl px-5 py-4 shadow-2xl flex items-center justify-between">
             <span class="flex items-center gap-2 font-bold text-sm">
                 <span class="relative">
@@ -198,7 +200,8 @@
         </div>
     </div>
 
-    <div id="toast-container" class="fixed bottom-4 left-4 right-4 z-50 flex flex-col items-center gap-2"></div>
+    <div id="toast-container" class="fixed bottom-4 left-4 right-4 z-50 flex flex-col items-center gap-2"
+        style="bottom: calc(1rem + env(safe-area-inset-bottom));"></div>
 
     <script>
         // --- GUARDIA DE SEGURIDAD ---
