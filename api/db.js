@@ -31,10 +31,18 @@ const PERMISOS_POR_ROL = {
     // empresa (ver columnaEmpresaDe() mas abajo), no hay fuga entre
     // empresas distintas.
     empresas: ['select'],
+    // Grupos de compatibilidad (micas/pantallas que comparten pieza y stock entre
+    // varios modelos). Solo lectura: se usan para que la busqueda de productos
+    // tambien encuentre por modelo "hermano" (ver TABLAS_HIJAS_SIN_EMPRESA_ID
+    // mas abajo para como se acota grupos_compatibilidad_modelos por empresa).
+    grupos_compatibilidad: ['select'],
+    grupos_compatibilidad_modelos: ['select'],
   },
   tecnico: {
     productos: ['select'],
     ordenes: ['select', 'insert'],
+    grupos_compatibilidad: ['select'],
+    grupos_compatibilidad_modelos: ['select'],
   },
 };
 
@@ -61,6 +69,20 @@ const RPCS_PERMITIDAS = {
 function columnaEmpresaDe(tabla) {
   return tabla === 'empresas' ? 'id' : 'empresa_id';
 }
+
+// --- TABLAS HIJAS SIN COLUMNA empresa_id PROPIA ---
+// grupos_compatibilidad_modelos no tiene empresa_id (solo grupo_id, marca,
+// modelo, modelo_normalizado): su empresa se determina indirectamente via
+// grupos_compatibilidad.empresa_id. NO podemos confiar en que el cliente
+// mande un "match: { grupo_id: X }" honesto (un vendedor de la empresa 6
+// podria pedir un grupo_id que en realidad es de la empresa 1 con solo
+// adivinar un numero pequeño). Por eso, para estas tablas, el servidor
+// resuelve primero QUE grupo_id pertenecen a la empresa del token, y fuerza
+// el filtro con esos IDs — igual de estricto que ".eq('empresa_id', ...)"
+// para las demas tablas, solo que en dos pasos.
+const TABLAS_HIJAS_SIN_EMPRESA_ID = {
+  grupos_compatibilidad_modelos: { tablaPadre: 'grupos_compatibilidad', columnaFK: 'grupo_id' },
+};
 
 function tienePermiso(rol, tabla, accion) {
   if (rol === 'dueno') return true;
@@ -183,13 +205,33 @@ module.exports = async (req, res) => {
         // aislamiento multi-empresa. (columnaEmpresaDe: "id" para la propia
         // tabla "empresas", "empresa_id" para el resto)
         const colEmpresaSelect = columnaEmpresaDe(table);
-        if (userContext) {
-           query = query.eq(colEmpresaSelect, userContext.empresa_id);
+        const tablaHija = TABLAS_HIJAS_SIN_EMPRESA_ID[table];
+
+        if (tablaHija && userContext) {
+          // Tabla sin empresa_id propia (ver TABLAS_HIJAS_SIN_EMPRESA_ID): resolver
+          // primero que IDs de la tabla padre pertenecen a esta empresa, y forzar
+          // el filtro con esos IDs en vez de confiar en un "match" del cliente.
+          const { data: idsPadre, error: errPadre } = await supabase
+            .from(tablaHija.tablaPadre)
+            .select('id')
+            .eq('empresa_id', userContext.empresa_id);
+          if (errPadre) {
+            return res.status(400).json({ error: errPadre.message });
+          }
+          const idsPermitidos = (idsPadre || []).map(r => r.id);
+          // Si la empresa no tiene ningun registro padre, forzamos un ID imposible
+          // para que el resultado sea vacio (no filtrar NO es una opcion segura).
+          query = query.in(tablaHija.columnaFK, idsPermitidos.length > 0 ? idsPermitidos : [-1]);
+        } else if (userContext) {
+          query = query.eq(colEmpresaSelect, userContext.empresa_id);
         }
 
         if (match) {
-          // Aplicar filtros exactos (omitiendo la columna de empresa si ya fue forzada)
+          // Aplicar filtros exactos (omitiendo la columna de empresa si ya fue forzada,
+          // y omitiendo la FK de una tabla hija porque ya se forzó arriba con la lista
+          // de IDs permitidos — no se confía en el valor que mande el cliente).
           for (const key in match) {
+            if (tablaHija && key === tablaHija.columnaFK) continue;
             if (key !== colEmpresaSelect || !userContext) {
               query = query.eq(key, match[key]);
             }

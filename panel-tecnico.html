@@ -235,13 +235,17 @@
 
         // --- STOCK RÁPIDO (solo lectura, sin costos ni precio mayorista) ---
         let stockProductos = [];
+        // Modelos miembro de cada grupo de compatibilidad (micas/pantallas que sirven para
+        // varios modelos y comparten el mismo stock). El backend (api/db.js) ya acota esta
+        // tabla a los grupos de MI empresa aunque no se mande ningún "match".
+        let gruposCompatModelos = [];
 
         async function cargarStock() {
             try {
                 const resp = await llamarApi({
                     action: 'select',
                     table: 'productos',
-                    select: 'id, nombre, sku, precio, stock, categoria, modelo_compatible',
+                    select: 'id, nombre, sku, precio, stock, categoria, modelo_compatible, grupo_compatibilidad_id',
                     order: { column: 'nombre', ascending: true },
                     limit: 2000
                 });
@@ -250,6 +254,22 @@
                 renderizarStock(stockProductos);
             } catch (e) {
                 document.getElementById('estado-carga-stock').innerHTML = '<i class="fa-solid fa-triangle-exclamation text-bhRed mr-2"></i> No se pudo cargar el stock: ' + e.message;
+            }
+            cargarGruposCompatModelos();
+        }
+
+        async function cargarGruposCompatModelos() {
+            try {
+                const resp = await llamarApi({
+                    action: 'select',
+                    table: 'grupos_compatibilidad_modelos',
+                    select: 'grupo_id, modelo_normalizado'
+                });
+                gruposCompatModelos = resp.data || [];
+            } catch (e) {
+                // No bloqueante: si falla, la búsqueda por compatibilidad simplemente no se expande.
+                console.warn('No se pudieron cargar los grupos de compatibilidad:', e.message);
+                gruposCompatModelos = [];
             }
         }
 
@@ -287,11 +307,21 @@
         function filtrarStock() {
             const term = document.getElementById('buscador-stock').value.trim().toLowerCase();
             if (!term) return renderizarStock(stockProductos);
-            const filtrado = stockProductos.filter(p =>
-                (p.nombre || '').toLowerCase().includes(term) ||
-                (p.sku || '').toLowerCase().includes(term) ||
-                (p.modelo_compatible || '').toLowerCase().includes(term)
-            );
+            const filtrado = stockProductos.filter(p => {
+                if ((p.nombre || '').toLowerCase().includes(term)) return true;
+                if ((p.sku || '').toLowerCase().includes(term)) return true;
+                if ((p.modelo_compatible || '').toLowerCase().includes(term)) return true;
+                // Compatibilidad: si el término buscado coincide con un modelo "hermano" del
+                // mismo grupo (ej. buscar "Note 10s" encuentra la mica del "Note 11"), igual
+                // que ya hace el inventario de escritorio.
+                if (p.grupo_compatibilidad_id) {
+                    const termNorm = term.toUpperCase();
+                    return gruposCompatModelos.some(m =>
+                        m.grupo_id === p.grupo_compatibilidad_id && (m.modelo_normalizado || '').includes(termNorm)
+                    );
+                }
+                return false;
+            });
             renderizarStock(filtrado);
         }
     </script>
