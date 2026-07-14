@@ -37,6 +37,10 @@ const PERMISOS_POR_ROL = {
     // mas abajo para como se acota grupos_compatibilidad_modelos por empresa).
     grupos_compatibilidad: ['select'],
     grupos_compatibilidad_modelos: ['select'],
+    // Solo lectura: el "Cierre de Caja" del panel movil lista las boletas del
+    // dia (de SU empresa, el filtro por empresa_id se fuerza mas abajo).
+    // Las facturas se CREAN via RPC (generar_boleta_movil), nunca por insert.
+    facturas: ['select'],
   },
   tecnico: {
     productos: ['select'],
@@ -235,6 +239,18 @@ module.exports = async (req, res) => {
             if (key !== colEmpresaSelect || !userContext) {
               query = query.eq(key, match[key]);
             }
+          }
+        }
+        // Filtros de rango opcionales (>= y <=), mismo patron defensivo que
+        // "match": nunca pueden pisar el filtro de empresa forzado arriba.
+        if (req.body.gte) {
+          for (const key in req.body.gte) {
+            if (key !== colEmpresaSelect) query = query.gte(key, req.body.gte[key]);
+          }
+        }
+        if (req.body.lte) {
+          for (const key in req.body.lte) {
+            if (key !== colEmpresaSelect) query = query.lte(key, req.body.lte[key]);
           }
         }
         if (order) {

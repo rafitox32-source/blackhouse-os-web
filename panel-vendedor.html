@@ -60,8 +60,20 @@
             </div>
         </div>
 
+        <!-- TABS: Ventas / Cierre de Caja -->
+        <div class="mt-4 grid grid-cols-2 gap-2">
+            <button id="tab-ventas" onclick="cambiarVista('ventas')"
+                class="py-2.5 rounded-xl text-sm font-bold bg-bhPurple text-white transition">
+                <i class="fa-solid fa-cart-shopping mr-1"></i> Ventas
+            </button>
+            <button id="tab-cierre" onclick="cambiarVista('cierre')"
+                class="py-2.5 rounded-xl text-sm font-bold bg-white/5 text-gray-400 transition">
+                <i class="fa-solid fa-cash-register mr-1"></i> Cierre de Caja
+            </button>
+        </div>
+
         <!-- BUSCADOR -->
-        <div class="mt-4 relative">
+        <div id="buscador-wrapper" class="mt-4 relative">
             <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
             <input id="buscador" type="text" placeholder="Buscar producto por nombre o SKU..."
                 oninput="filtrarProductos()"
@@ -70,7 +82,7 @@
     </header>
 
     <!-- LISTA DE PRODUCTOS -->
-    <main class="p-4 pb-28" style="padding-bottom: calc(7rem + env(safe-area-inset-bottom));">
+    <main id="vista-ventas" class="p-4 pb-28" style="padding-bottom: calc(7rem + env(safe-area-inset-bottom));">
         <div id="estado-carga" class="text-center text-gray-500 text-sm py-10">
             <i class="fa-solid fa-spinner fa-spin mr-2"></i> Cargando catálogo...
         </div>
@@ -79,6 +91,31 @@
             <i class="fa-solid fa-box-open text-2xl mb-2 block"></i> No se encontraron productos.
         </div>
     </main>
+
+    <!-- VISTA: CIERRE DE CAJA (solo lectura, sin botones de accion) -->
+    <section id="vista-cierre" class="hidden p-4 pb-28" style="padding-bottom: calc(7rem + env(safe-area-inset-bottom));">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-base font-black text-white"><i class="fa-solid fa-cash-register text-bhPurple mr-2"></i>Cierre de Caja · Hoy</h2>
+            <span id="cierre-fecha" class="text-xs text-gray-500 font-mono"></span>
+        </div>
+
+        <div id="cierre-cargando" class="text-center text-gray-500 text-sm py-10">
+            <i class="fa-solid fa-spinner fa-spin mr-2"></i> Cargando ventas de hoy...
+        </div>
+
+        <div id="cierre-error" class="hidden text-center text-bhRed text-sm py-10"></div>
+
+        <div id="cierre-contenido" class="hidden">
+            <div id="cierre-tarjetas" class="grid grid-cols-2 gap-3"></div>
+            <div id="cierre-total-general" class="mt-3"></div>
+
+            <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mt-6 mb-3">Boletas de hoy</h3>
+            <div id="cierre-lista" class="space-y-2"></div>
+            <div id="cierre-vacio" class="hidden text-center text-gray-500 text-sm py-10">
+                <i class="fa-solid fa-receipt text-2xl mb-2 block"></i> Todavía no hay boletas registradas hoy.
+            </div>
+        </div>
+    </section>
 
     <!-- BARRA FLOTANTE DEL CARRITO -->
     <div id="cart-bar" class="cart-bar hidden fixed bottom-4 left-4 right-4 z-30"
@@ -176,6 +213,20 @@
                     <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">DNI / RUC <span class="normal-case text-gray-600">(opcional)</span></label>
                     <input id="cli-documento" type="text" placeholder="Ej: 12345678"
                         class="w-full mt-1.5 bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-bhPurple/60">
+                </div>
+
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Método de pago</label>
+                    <div id="metodo-pago-botones" class="grid grid-cols-2 gap-2 mt-1.5">
+                        <button type="button" onclick="seleccionarMetodoPago('Efectivo')" data-metodo="Efectivo"
+                            class="metodo-pago-btn py-3 rounded-xl border text-sm font-semibold transition">💵 Efectivo</button>
+                        <button type="button" onclick="seleccionarMetodoPago('Yape/Plin')" data-metodo="Yape/Plin"
+                            class="metodo-pago-btn py-3 rounded-xl border text-sm font-semibold transition">🟣 Yape/Plin</button>
+                        <button type="button" onclick="seleccionarMetodoPago('Tarjeta')" data-metodo="Tarjeta"
+                            class="metodo-pago-btn py-3 rounded-xl border text-sm font-semibold transition">💳 Tarjeta</button>
+                        <button type="button" onclick="seleccionarMetodoPago('Transferencia')" data-metodo="Transferencia"
+                            class="metodo-pago-btn py-3 rounded-xl border text-sm font-semibold transition">🏦 Transferencia</button>
+                    </div>
                 </div>
 
                 <div class="flex items-center justify-between bg-black/30 border border-gray-800 rounded-xl px-4 py-3">
@@ -500,12 +551,29 @@
             if (carrito.length === 0) cerrarCarrito();
         }
 
+        // --- MÉTODO DE PAGO (se guarda en facturas.metodo_pago via generar_boleta_movil) ---
+        let metodoPagoSeleccionado = 'Efectivo';
+
+        function seleccionarMetodoPago(metodo) {
+            metodoPagoSeleccionado = metodo;
+            document.querySelectorAll('#metodo-pago-botones .metodo-pago-btn').forEach(btn => {
+                const activo = btn.dataset.metodo === metodo;
+                btn.classList.toggle('border-bhPurple', activo);
+                btn.classList.toggle('bg-bhPurple/20', activo);
+                btn.classList.toggle('text-white', activo);
+                btn.classList.toggle('border-gray-800', !activo);
+                btn.classList.toggle('bg-black/40', !activo);
+                btn.classList.toggle('text-gray-400', !activo);
+            });
+        }
+
         // --- MODAL: DATOS DEL CLIENTE (paso previo a confirmar la venta) ---
         function abrirModalCliente() {
             if (carrito.length === 0) return;
             document.getElementById('cli-nombre').value = '';
             document.getElementById('cli-telefono').value = '';
             document.getElementById('cli-documento').value = '';
+            seleccionarMetodoPago('Efectivo');
             const total = carrito.reduce((s, i) => s + i.cantidad * i.precio, 0);
             document.getElementById('cli-total').textContent = 'S/ ' + total.toFixed(2);
             cerrarCarrito();
@@ -569,6 +637,10 @@
             const nombreCliente = document.getElementById('cli-nombre').value.trim();
             const telefonoCliente = document.getElementById('cli-telefono').value.trim();
             const documentoCliente = document.getElementById('cli-documento').value.trim();
+            // Se captura ACÁ (no al momento de la RPC): si el vendedor abre otra
+            // venta mientras la boleta anterior todavía se genera en segundo
+            // plano, el selector se resetea y no debe pisar esta venta.
+            const metodoPagoVenta = metodoPagoSeleccionado || null;
 
             if (!nombreCliente) return mostrarToast('El nombre del cliente es obligatorio', 'error');
             if (!telefonoCliente) return mostrarToast('El teléfono de WhatsApp del cliente es obligatorio', 'error');
@@ -645,7 +717,8 @@
                         p_cliente_documento: documentoCliente || null,
                         p_cliente_telefono: telefonoCliente,
                         p_monto_total: totalVenta,
-                        p_items_json: itemsParaBoleta
+                        p_items_json: itemsParaBoleta,
+                        p_metodo_pago: metodoPagoVenta
                     }
                 });
                 const boleta = Array.isArray(respBoleta.data) ? respBoleta.data[0] : respBoleta.data;
@@ -678,6 +751,148 @@
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fa-brands fa-whatsapp"></i> Confirmar y enviar boleta';
             }
+        }
+
+        // --- TABS: VENTAS / CIERRE DE CAJA ---
+        let vistaActual = 'ventas';
+
+        function cambiarVista(vista) {
+            vistaActual = vista;
+            const esCierre = vista === 'cierre';
+
+            document.getElementById('vista-ventas').classList.toggle('hidden', esCierre);
+            document.getElementById('vista-cierre').classList.toggle('hidden', !esCierre);
+            document.getElementById('buscador-wrapper').classList.toggle('hidden', esCierre);
+
+            const tabVentas = document.getElementById('tab-ventas');
+            const tabCierre = document.getElementById('tab-cierre');
+            tabVentas.className = 'py-2.5 rounded-xl text-sm font-bold transition ' + (esCierre ? 'bg-white/5 text-gray-400' : 'bg-bhPurple text-white');
+            tabCierre.className = 'py-2.5 rounded-xl text-sm font-bold transition ' + (esCierre ? 'bg-bhPurple text-white' : 'bg-white/5 text-gray-400');
+
+            if (esCierre) {
+                // La barra del carrito taparía la lista y no aplica en esta vista.
+                document.getElementById('cart-bar').classList.add('hidden');
+                cargarCierreCaja();
+            } else {
+                actualizarBarraCarrito(); // re-mostrar la barra si hay items
+            }
+        }
+
+        // --- CIERRE DE CAJA (solo lectura: boletas de HOY con subtotales por método de pago) ---
+        const METODOS_CIERRE = [
+            { clave: 'efectivo', label: '💵 Efectivo' },
+            { clave: 'yape', label: '🟣 Yape/Plin' },
+            { clave: 'tarjeta', label: '💳 Tarjeta' },
+            { clave: 'transferencia', label: '🏦 Transferencia' }
+        ];
+
+        // Normaliza el texto guardado en facturas.metodo_pago a una de las 4
+        // claves conocidas; cualquier otra cosa (null incluido) cae en "otro".
+        function claveMetodoPago(metodo) {
+            const m = (metodo || '').toLowerCase();
+            if (m === 'efectivo') return 'efectivo';
+            if (m.includes('yape') || m.includes('plin')) return 'yape';
+            if (m.includes('tarjeta')) return 'tarjeta';
+            if (m.includes('transferencia')) return 'transferencia';
+            return 'otro';
+        }
+
+        async function cargarCierreCaja() {
+            const cargando = document.getElementById('cierre-cargando');
+            const contenido = document.getElementById('cierre-contenido');
+            const errorEl = document.getElementById('cierre-error');
+            cargando.classList.remove('hidden');
+            contenido.classList.add('hidden');
+            errorEl.classList.add('hidden');
+
+            // Medianoche a medianoche en hora LOCAL del navegador (el celular
+            // del vendedor ya está en hora de Lima). toISOString() solo traduce
+            // ese mismo instante a UTC para compararlo contra created_at.
+            const ahora = new Date();
+            const inicioHoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 0, 0, 0, 0);
+            const finHoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 23, 59, 59, 999);
+            document.getElementById('cierre-fecha').textContent = ahora.toLocaleDateString('es-PE', { year: 'numeric', month: '2-digit', day: '2-digit' });
+
+            try {
+                const resp = await llamarApi({
+                    action: 'select',
+                    table: 'facturas',
+                    select: 'id, cliente_nombre, monto_total, metodo_pago, tipo, created_at',
+                    gte: { created_at: inicioHoy.toISOString() },
+                    lte: { created_at: finHoy.toISOString() },
+                    order: { column: 'created_at', ascending: false }
+                });
+                renderizarCierreCaja(resp.data || []);
+                cargando.classList.add('hidden');
+                contenido.classList.remove('hidden');
+            } catch (e) {
+                cargando.classList.add('hidden');
+                errorEl.textContent = 'No se pudo cargar el cierre de caja: ' + e.message;
+                errorEl.classList.remove('hidden');
+            }
+        }
+
+        function renderizarCierreCaja(facturas) {
+            const totales = { efectivo: 0, yape: 0, tarjeta: 0, transferencia: 0, otro: 0 };
+            const conteos = { efectivo: 0, yape: 0, tarjeta: 0, transferencia: 0, otro: 0 };
+            let totalGeneral = 0;
+
+            for (const f of facturas) {
+                const clave = claveMetodoPago(f.metodo_pago);
+                const monto = Number(f.monto_total || 0);
+                totales[clave] += monto;
+                conteos[clave] += 1;
+                totalGeneral += monto;
+            }
+
+            const tarjetas = METODOS_CIERRE.map(m => `
+                <div class="bg-bhCard border border-gray-800 rounded-xl p-4">
+                    <p class="text-xs text-gray-500 font-semibold">${m.label}</p>
+                    <p class="text-lg font-black text-white mt-1">S/ ${totales[m.clave].toFixed(2)}</p>
+                    <p class="text-[11px] text-gray-600 mt-0.5">${conteos[m.clave]} boleta(s)</p>
+                </div>`);
+
+            // "Otro/Sin especificar" solo si existe alguna boleta sin método reconocido.
+            if (conteos.otro > 0) {
+                tarjetas.push(`
+                <div class="bg-bhCard border border-gray-800 rounded-xl p-4">
+                    <p class="text-xs text-gray-500 font-semibold">❔ Otro / Sin especificar</p>
+                    <p class="text-lg font-black text-white mt-1">S/ ${totales.otro.toFixed(2)}</p>
+                    <p class="text-[11px] text-gray-600 mt-0.5">${conteos.otro} boleta(s)</p>
+                </div>`);
+            }
+            document.getElementById('cierre-tarjetas').innerHTML = tarjetas.join('');
+
+            document.getElementById('cierre-total-general').innerHTML = `
+                <div class="bg-bhGreen/10 border border-bhGreen/40 rounded-xl p-4 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-bhGreen font-bold uppercase tracking-wider">Total general</p>
+                        <p class="text-[11px] text-gray-500 mt-0.5">${facturas.length} boleta(s) hoy</p>
+                    </div>
+                    <p class="text-2xl font-black text-bhGreen">S/ ${totalGeneral.toFixed(2)}</p>
+                </div>`;
+
+            const lista = document.getElementById('cierre-lista');
+            const vacio = document.getElementById('cierre-vacio');
+            if (facturas.length === 0) {
+                lista.innerHTML = '';
+                vacio.classList.remove('hidden');
+                return;
+            }
+            vacio.classList.add('hidden');
+            // cliente_nombre y metodo_pago son texto libre de la BD:
+            // SIEMPRE pasan por escaparHtml antes de tocar el DOM.
+            lista.innerHTML = facturas.map(f => {
+                const hora = new Date(f.created_at).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+                return `
+                <div class="bg-bhCard border border-gray-800 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+                    <div class="min-w-0 flex-1">
+                        <p class="font-semibold text-white text-sm truncate">${escaparHtml(f.cliente_nombre || 'Sin nombre')}</p>
+                        <p class="text-xs text-gray-500 mt-0.5">${escaparHtml(hora)} · ${escaparHtml(f.metodo_pago || 'Sin especificar')}</p>
+                    </div>
+                    <p class="shrink-0 font-black text-bhGreen text-sm">S/ ${Number(f.monto_total || 0).toFixed(2)}</p>
+                </div>`;
+            }).join('');
         }
 
         cargarProductos();
