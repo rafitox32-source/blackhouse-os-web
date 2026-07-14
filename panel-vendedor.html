@@ -79,6 +79,10 @@
                 oninput="filtrarProductos()"
                 class="w-full bg-bhCard border border-gray-800 rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-bhPurple/60">
         </div>
+        <button id="btn-vender-otro" onclick="abrirModalOtro()"
+            class="mt-3 w-full py-2.5 rounded-xl border border-dashed border-gray-700 text-sm font-semibold text-gray-400 hover:border-bhPurple/60 hover:text-bhPurple transition">
+            <i class="fa-solid fa-plus mr-1"></i> Vender un producto que no está en la lista
+        </button>
     </header>
 
     <!-- LISTA DE PRODUCTOS -->
@@ -150,6 +154,51 @@
             <div class="flex gap-3 mt-6">
                 <button onclick="cerrarModalVenta()" class="flex-1 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 font-semibold text-sm">Cancelar</button>
                 <button onclick="agregarAlCarrito()" class="flex-1 py-3 rounded-xl bg-bhPurple hover:opacity-90 text-white font-bold text-sm">
+                    <i class="fa-solid fa-cart-plus mr-1"></i> Agregar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: VENDER OTRO (producto que no está en el catálogo) -->
+    <div id="modal-otro" class="hidden fixed inset-0 z-30 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+        <div class="bg-bhCard border border-gray-800 rounded-2xl w-full max-w-sm p-6 max-h-[90vh] overflow-y-auto">
+            <h3 class="text-lg font-bold text-white mb-1"><i class="fa-solid fa-plus text-bhPurple mr-2"></i>Vender otro producto</h3>
+            <p class="text-xs text-gray-500 mb-4">Se agrega al catálogo de tu inventario (con categoría y subcategoría) y se vende igual que cualquier otro producto.</p>
+
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Nombre del producto</label>
+            <input id="otro-nombre" type="text" placeholder="Ej: Cable USB-C genérico"
+                class="w-full mt-1.5 mb-3 bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-bhPurple/60">
+
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Categoría</label>
+            <select id="otro-categoria" class="w-full mt-1.5 mb-3 bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-bhPurple/60">
+                <option value="Accesorios">Accesorios</option>
+                <option value="Repuestos de Celulares">Repuestos de Celulares</option>
+                <option value="Pantallas">Pantallas</option>
+                <option value="Micas">Micas</option>
+                <option value="Celulares">Celulares</option>
+            </select>
+
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Subcategoría <span class="normal-case font-normal text-gray-600">(opcional)</span></label>
+            <input id="otro-subcategoria" type="text" placeholder="Ej: Cargadores"
+                class="w-full mt-1.5 mb-3 bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-bhPurple/60">
+
+            <div class="grid grid-cols-2 gap-3 mb-1">
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Precio (S/)</label>
+                    <input id="otro-precio" type="number" min="0" step="0.01" placeholder="0.00"
+                        class="w-full mt-1.5 bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-bhPurple/60">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase tracking-wider">Cantidad</label>
+                    <input id="otro-cantidad" type="number" min="1" step="1" value="1"
+                        class="w-full mt-1.5 bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-bhPurple/60">
+                </div>
+            </div>
+
+            <div class="flex gap-3 mt-6">
+                <button onclick="cerrarModalOtro()" class="flex-1 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 font-semibold text-sm">Cancelar</button>
+                <button id="btn-confirmar-otro" onclick="confirmarVenderOtro()" class="flex-1 py-3 rounded-xl bg-bhPurple hover:opacity-90 text-white font-bold text-sm">
                     <i class="fa-solid fa-cart-plus mr-1"></i> Agregar
                 </button>
             </div>
@@ -463,6 +512,69 @@
             actualizarBarraCarrito();
         }
 
+        // --- VENDER OTRO (producto que no está en el catálogo) ---
+        function abrirModalOtro() {
+            document.getElementById('otro-nombre').value = '';
+            document.getElementById('otro-categoria').value = 'Accesorios';
+            document.getElementById('otro-subcategoria').value = '';
+            document.getElementById('otro-precio').value = '';
+            document.getElementById('otro-cantidad').value = '1';
+            document.getElementById('modal-otro').classList.remove('hidden');
+        }
+
+        function cerrarModalOtro() {
+            document.getElementById('modal-otro').classList.add('hidden');
+        }
+
+        async function confirmarVenderOtro() {
+            const nombre = document.getElementById('otro-nombre').value.trim();
+            const categoria = document.getElementById('otro-categoria').value;
+            const subcategoria = document.getElementById('otro-subcategoria').value.trim() || null;
+            const precio = Number(document.getElementById('otro-precio').value);
+            const cantidad = parseInt(document.getElementById('otro-cantidad').value || '0');
+
+            if (!nombre) return mostrarToast('Ponele un nombre al producto', 'error');
+            if (!precio || precio <= 0) return mostrarToast('El precio tiene que ser mayor a 0', 'error');
+            if (!cantidad || cantidad < 1) return mostrarToast('La cantidad tiene que ser al menos 1', 'error');
+
+            const btn = document.getElementById('btn-confirmar-otro');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+            try {
+                // SKU propio (no sigue la numeracion PANT-/ACCE-/etc. del escritorio, que se
+                // calcula por lote al importar Excel) para que movimientos_stock nunca reciba
+                // un sku nulo al vender esto despues.
+                const sku = 'OTR-' + Date.now();
+                const resp = await llamarApi({
+                    action: 'insert',
+                    table: 'productos',
+                    data: { nombre, categoria, subcategoria, precio, stock: cantidad, sku }
+                });
+                const nuevo = Array.isArray(resp.data) ? resp.data[0] : resp.data;
+                if (!nuevo || !nuevo.id) throw new Error('No se pudo crear el producto');
+
+                productos.push(nuevo);
+                carrito.push({
+                    id: nuevo.id,
+                    nombre: nuevo.nombre,
+                    sku: nuevo.sku,
+                    precio: Number(nuevo.precio || 0),
+                    cantidad
+                });
+
+                mostrarToast(`${nombre} agregado al catálogo y al carrito`, 'success');
+                cerrarModalOtro();
+                filtrarProductos();
+                actualizarBarraCarrito();
+            } catch (e) {
+                mostrarToast('No se pudo agregar el producto: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-cart-plus mr-1"></i> Agregar';
+            }
+        }
+
         function actualizarBarraCarrito() {
             const bar = document.getElementById('cart-bar');
             const totalItems = carrito.reduce((s, i) => s + i.cantidad, 0);
@@ -763,6 +875,7 @@
             document.getElementById('vista-ventas').classList.toggle('hidden', esCierre);
             document.getElementById('vista-cierre').classList.toggle('hidden', !esCierre);
             document.getElementById('buscador-wrapper').classList.toggle('hidden', esCierre);
+            document.getElementById('btn-vender-otro').classList.toggle('hidden', esCierre);
 
             const tabVentas = document.getElementById('tab-ventas');
             const tabCierre = document.getElementById('tab-cierre');

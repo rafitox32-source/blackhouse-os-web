@@ -25,7 +25,12 @@ const COLUMNAS_OCULTAS_NO_DUENO = {
 // vendedor/tecnico, si la tabla no aparece aqui, la peticion se rechaza.
 const PERMISOS_POR_ROL = {
   vendedor: {
-    productos: ['select'], // las ventas van por RPC (registrar_venta_movil), no por insert/update directo
+    // Las ventas normales van por RPC (registrar_venta_movil), no por insert/update directo.
+    // 'insert' se agrega solo para "Vender Otros": un producto que no esta en el catalogo se
+    // da de alta al vuelo (sin costo, ver COLUMNAS_OCULTAS_NO_DUENO mas abajo, que ya le
+    // borra cualquier columna de costo a este rol) y despues se vende igual que cualquier
+    // otro producto, por la misma RPC de siempre.
+    productos: ['select', 'insert'],
     // Solo lectura: necesita el RUC/razon social/direccion de SU PROPIA
     // empresa para imprimir el encabezado de la boleta. Sigue acotado por
     // empresa (ver columnaEmpresaDe() mas abajo), no hay fuga entre
