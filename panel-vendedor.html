@@ -830,7 +830,10 @@
                         p_cliente_telefono: telefonoCliente,
                         p_monto_total: totalVenta,
                         p_items_json: itemsParaBoleta,
-                        p_metodo_pago: metodoPagoVenta
+                        p_metodo_pago: metodoPagoVenta,
+                        // Atribuye la boleta a quien la vendió: así cada vendedora ve SOLO
+                        // sus ventas en el Cierre de Caja (control por trabajador).
+                        p_vendedor: localStorage.getItem('web_user') || null
                     }
                 });
                 const boleta = Array.isArray(respBoleta.data) ? respBoleta.data[0] : respBoleta.data;
@@ -931,6 +934,9 @@
                     action: 'select',
                     table: 'facturas',
                     select: 'id, cliente_nombre, monto_total, metodo_pago, tipo, created_at',
+                    // Solo MIS ventas: las boletas llevan vendedor_usuario desde la migración 011.
+                    // (Las emitidas desde el escritorio u otros vendedores ya no aparecen aquí.)
+                    match: { vendedor_usuario: localStorage.getItem('web_user') },
                     gte: { created_at: inicioHoy.toISOString() },
                     lte: { created_at: finHoy.toISOString() },
                     order: { column: 'created_at', ascending: false }
