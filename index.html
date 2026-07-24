@@ -946,13 +946,26 @@
 
    <script>
         // -------------------------------------------------------------
-        // CONEXIÓN CON SUPABASE PARA EL LOGIN WEB (TABLA "usuarios")
+        // CONEXIÓN CON SUPABASE (solo para recuperar contraseña: el login
+        // real va por /api/login, que nunca expone la llave al navegador).
+        // La URL/llave ya NO va hardcodeada aqui: se pide una sola vez a
+        // /api/config (mismo patron que tracking.html y actualizar-password.html),
+        // asi que si la llave anon rota algun dia, se cambia en un solo lugar
+        // (la variable de entorno de Vercel), no en cada HTML por separado.
         // -------------------------------------------------------------
-        
-        // ¡REEMPLAZA ESTO POR TUS CLAVES REALES DE SUPABASE!
-        const supabaseUrl = 'https://flfhpffslhjcuvhxsnjz.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsZmhwZmZzbGhqY3V2aHhzbmp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg4Mzg0MDMsImV4cCI6MjA4NDQxNDQwM30.9AxJDLzH2f5jJxAarw5dc1DMuvDlFY2sAr6zJBNUsFc';
-        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+        let supabaseClient;
+        async function initSupabase() {
+            if (supabaseClient) return supabaseClient;
+            try {
+                const res = await fetch('/api/config');
+                const config = await res.json();
+                supabaseClient = supabase.createClient(config.url, config.key);
+                return supabaseClient;
+            } catch (err) {
+                console.error("Error cargando configuración de BD:", err);
+                return null;
+            }
+        }
 
         async function iniciarSesionWeb() {
             const usuarioInput = document.getElementById('web-email').value.trim();
