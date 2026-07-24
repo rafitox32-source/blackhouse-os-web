@@ -163,6 +163,13 @@ module.exports = async (req, res) => {
       // saldo/evidencia, adivinar un "id" sin el token correcto no devuelve nada.
       { table: 'ordenes', select: 'modelo, estado, modo_transmision, video_url, empresa_id, fecha_cita, saldo, evidencia' },
       { table: 'empresas', select: 'nombre, telefono' }, // Nombre/telefono del taller para el tracking
+      // Vitrina de "mientras esperas" en el tracking: el servidor SIEMPRE fuerza
+      // categoria IN ('Accesorios','Micas') y stock>0 mas abajo (no se confia en
+      // que el cliente lo pida asi), asi que esta lista blanca no habilita
+      // scrapear el inventario completo (pantallas, etc.) de ningun taller.
+      // El cliente filtra "Micas" a una sola fila que coincida con el modelo de
+      // SU equipo (no se muestran las 100+ micas de otros modelos).
+      { table: 'productos', select: 'id, nombre, precio, stock, categoria, modelo_compatible' },
       { table: 'usuarios', select: 'nombre_completo, nickname, avatar, estado, pais' }, // Resellers
     ];
     const isPublicQuery = action === 'select' && CONSULTAS_PUBLICAS.some(c => c.table === table && c.select === select);
@@ -243,6 +250,12 @@ module.exports = async (req, res) => {
           query = query.in(tablaHija.columnaFK, idsPermitidos.length > 0 ? idsPermitidos : [-1]);
         } else if (userContext) {
           query = query.eq(colEmpresaSelect, userContext.empresa_id);
+        } else if (table === 'productos') {
+          // Vitrina publica "mientras esperas" (tracking del cliente): jamas se
+          // confia en un "categoria"/"stock" que mande el cliente, se fuerza aqui
+          // mismo. Incluye Micas ademas de Accesorios porque el cliente filtra
+          // esa lista a una sola fila que coincida con el modelo de su equipo.
+          query = query.in('categoria', ['Accesorios', 'Micas']).gt('stock', 0);
         }
 
         if (match) {

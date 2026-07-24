@@ -28,7 +28,8 @@
             color: #f4f4f5;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
+            align-items: center;
             padding: 32px 16px calc(32px + env(safe-area-inset-bottom));
             padding-top: calc(32px + env(safe-area-inset-top));
         }
@@ -335,6 +336,79 @@
         }
         .whatsapp-cta a { color: var(--bh-green); font-weight: 700; text-decoration: none; }
         .whatsapp-cta a:hover { text-decoration: underline; }
+
+        .card + .card { margin-top: 16px; }
+        .tienda-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        .tienda-header i { color: var(--bh-purple); }
+        .tienda-header h3 { margin: 0; font-size: 15px; color: #fff; }
+        .tienda-sub { font-size: 12px; color: #8b8b93; margin: 0 0 16px; }
+
+        .tienda-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 0;
+            border-top: 1px solid var(--bh-border);
+        }
+        .tienda-item:first-of-type { border-top: none; }
+        .tienda-item .info { flex: 1; min-width: 0; }
+        .tienda-item .nombre { font-size: 13px; font-weight: 700; color: #fff; }
+        .tienda-item .precio { font-size: 12px; color: var(--bh-green); font-weight: 700; }
+        .tienda-item .stepper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #1a1a1d;
+            border: 1px solid var(--bh-border);
+            border-radius: 10px;
+            padding: 4px 6px;
+        }
+        .tienda-item .stepper button {
+            width: 22px; height: 22px;
+            border-radius: 6px;
+            border: none;
+            background: #26262a;
+            color: #fff;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .tienda-item .stepper span { min-width: 16px; text-align: center; font-weight: 700; font-size: 13px; }
+
+        .tienda-carrito {
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px dashed var(--bh-border);
+        }
+        .tienda-carrito .subtotal {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: #d4d4d8;
+            margin-bottom: 12px;
+        }
+        .tienda-carrito .subtotal strong { color: var(--bh-green); }
+        .btn-pedir {
+            width: 100%;
+            padding: 13px;
+            border: none;
+            border-radius: 12px;
+            background: var(--bh-green);
+            color: #052e22;
+            font-weight: 800;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-pedir:disabled { opacity: 0.4; cursor: default; }
+        .tienda-vacio { font-size: 12px; color: #6b6b72; text-align: center; padding: 8px 0; }
     </style>
 </head>
 <body>
@@ -361,6 +435,8 @@
 
         <div id="whatsapp-cta-container"></div>
     </div>
+
+    <div id="tienda-card" class="card" style="display:none;"></div>
 
     <script>
         let supabaseClient;
@@ -456,6 +532,122 @@
                 </div>`;
         }
 
+        // --- TIENDA DE ACCESORIOS MIENTRAS ESPERA ---
+        // El pedido no se guarda en ningun lado: arma un mensaje de WhatsApp con
+        // lo elegido y lo manda al numero real del taller (mismo de renderWhatsappCta).
+        let carritoAccesorios = {};
+        let telefonoTallerTienda = null;
+        let ordenIdTienda = null;
+
+        // La mica del equipo se busca por modelo contra "modelo_compatible" del
+        // producto. No se muestran las decenas de micas de otros modelos: como
+        // mucho, UNA fila con el precio real de la mica que sirve para el equipo
+        // de esta orden.
+        //
+        // El nombre que escribe el tecnico en la orden ("SAMSUNG A71") casi nunca
+        // es literal al de un inventario que dice "Galaxy A71 / Galaxy A72", asi
+        // que un simple "incluye este texto" no alcanza. En vez de eso se compara
+        // por el CODIGO de modelo (el token alfanumerico con algun digito, ej.
+        // "A71", "X6A", "S22"): si el pedido y la mica comparten ese codigo exacto,
+        // se consideran el mismo equipo aunque la marca este escrita distinto.
+        function normalizarModeloTienda(txt) {
+            return (txt || '').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Z0-9 /]/g, '').replace(/\s+/g, ' ').trim();
+        }
+        function codigosModeloTienda(txt) {
+            return normalizarModeloTienda(txt).split(/[\s/]+/).filter(tok => tok.length >= 2 && /\d/.test(tok));
+        }
+
+        async function cargarTienda(empresaId, telefono, ordenId, modeloOrden) {
+            const cardTienda = document.getElementById('tienda-card');
+            if (!telefono) { cardTienda.style.display = 'none'; return; }
+
+            telefonoTallerTienda = telefono;
+            ordenIdTienda = ordenId;
+            carritoAccesorios = {};
+
+            try {
+                const res = await fetch('/api/db', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'select', table: 'productos', select: 'id, nombre, precio, stock, categoria, modelo_compatible',
+                        match: { empresa_id: empresaId }, order: { column: 'nombre', ascending: true }, limit: 100
+                    })
+                });
+                const { data: todos, error } = await res.json();
+
+                if (error || !todos || todos.length === 0) { cardTienda.style.display = 'none'; return; }
+
+                const accesorios = todos.filter(p => p.categoria === 'Accesorios');
+                const codigosOrden = codigosModeloTienda(modeloOrden);
+                const micaDelEquipo = codigosOrden.length
+                    ? todos.find(p => {
+                        if (p.categoria !== 'Micas') return false;
+                        const codigosMica = codigosModeloTienda(p.modelo_compatible);
+                        if (!codigosMica.length) return false; // sin modelo cargado: no adivinar, mejor no mostrarla
+                        return codigosMica.some(c => codigosOrden.includes(c));
+                    })
+                    : null;
+
+                const data = micaDelEquipo ? [...accesorios, micaDelEquipo] : accesorios;
+                if (data.length === 0) { cardTienda.style.display = 'none'; return; }
+
+                cardTienda.style.display = 'block';
+                cardTienda.innerHTML = `
+                    <div class="tienda-header"><i class="fa-solid fa-bag-shopping"></i><h3>Mientras esperas</h3></div>
+                    <p class="tienda-sub">¿Quieres aprovechar y pedir algún accesorio junto con tu equipo?</p>
+                    <div id="tienda-lista">
+                        ${data.map(p => `
+                            <div class="tienda-item">
+                                <div class="info">
+                                    <div class="nombre">${escaparHtml(p.nombre)}</div>
+                                    <div class="precio">S/ ${Number(p.precio || 0).toFixed(2)}</div>
+                                </div>
+                                <div class="stepper">
+                                    <button onclick="cambiarCantidadAccesorio(${p.id}, -1, '${escaparHtml(p.nombre).replace(/'/g, "\\'")}',  ${Number(p.precio || 0)})">−</button>
+                                    <span id="cant-${p.id}">0</span>
+                                    <button onclick="cambiarCantidadAccesorio(${p.id}, 1, '${escaparHtml(p.nombre).replace(/'/g, "\\'")}', ${Number(p.precio || 0)})">+</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="tienda-carrito">
+                        <div class="subtotal"><span>Subtotal del pedido</span><strong id="tienda-subtotal">S/ 0.00</strong></div>
+                        <button class="btn-pedir" id="btn-pedir-tienda" disabled onclick="pedirAccesoriosPorWhatsapp()">
+                            <i class="fa-brands fa-whatsapp"></i> Pedir por WhatsApp
+                        </button>
+                    </div>
+                `;
+            } catch (e) {
+                console.error('No se pudo cargar la tienda de accesorios', e);
+                cardTienda.style.display = 'none';
+            }
+        }
+
+        function cambiarCantidadAccesorio(id, delta, nombre, precio) {
+            const actual = carritoAccesorios[id] || { nombre, precio, cantidad: 0 };
+            actual.cantidad = Math.max(0, actual.cantidad + delta);
+            if (actual.cantidad === 0) delete carritoAccesorios[id];
+            else carritoAccesorios[id] = actual;
+
+            document.getElementById(`cant-${id}`).textContent = actual.cantidad;
+
+            const items = Object.values(carritoAccesorios);
+            const subtotal = items.reduce((s, it) => s + it.precio * it.cantidad, 0);
+            document.getElementById('tienda-subtotal').textContent = 'S/ ' + subtotal.toFixed(2);
+            document.getElementById('btn-pedir-tienda').disabled = items.length === 0;
+        }
+
+        function pedirAccesoriosPorWhatsapp() {
+            const items = Object.values(carritoAccesorios);
+            if (items.length === 0 || !telefonoTallerTienda) return;
+            const lineas = items.map(it => `- ${it.nombre} x${it.cantidad}`).join('\n');
+            const subtotal = items.reduce((s, it) => s + it.precio * it.cantidad, 0);
+            const mensaje = `Hola, quiero pedir esto junto con mi reparación #${ordenIdTienda}:\n${lineas}\n\nSubtotal aprox: S/ ${subtotal.toFixed(2)}`;
+            const soloDigitos = String(telefonoTallerTienda).replace(/\D/g, '');
+            window.open(`https://api.whatsapp.com/send?phone=51${soloDigitos}&text=${encodeURIComponent(mensaje)}`, '_blank');
+        }
+
         async function buscar() {
             const id = document.getElementById('orderId').value.trim();
             if (!id) return;
@@ -478,6 +670,7 @@
             }
 
             renderWhatsappCta(null);
+            document.getElementById('tienda-card').style.display = 'none';
 
             // Solo se pide la version extendida (saldo, foto, nombre del taller) si
             // el numero que se esta buscando es EXACTAMENTE el que vino con token en
@@ -520,6 +713,7 @@
                                 tallerHtml = `<p class="taller-nombre"><i class="fa-solid fa-shop"></i> ${escaparHtml(empresa.nombre)}</p>`;
                             }
                             renderWhatsappCta(empresa ? empresa.telefono : null);
+                            if (empresa && empresa.telefono) cargarTienda(data.empresa_id, empresa.telefono, id, data.modelo);
                         } catch (e) { console.error('No se pudo cargar el taller', e); }
                     }
 
