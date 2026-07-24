@@ -2,30 +2,313 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Rastreo de Orden | BlackHouse</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Rastreo de Reparación | BlackHouse OS</title>
+    <meta name="description" content="Consulta en tiempo real el estado de la reparación de tu equipo.">
+    <meta name="theme-color" content="#0b0b0c">
+    <link rel="icon" href="/icon-512.png">
+    <link rel="apple-touch-icon" href="/icon-512.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #0f0f0f; color: white; display: flex; justify-content: center; padding: 20px; font-family: sans-serif;}
-        .card { background: #1a1a1a; padding: 25px; border-radius: 12px; width: 100%; max-width: 400px; text-align: center; }
-        input { width: 90%; padding: 12px; margin: 10px 0; border-radius: 5px; border: 1px solid #333; background: #222; color: white; }
-        button { width: 96%; padding: 12px; background: #10b981; border: none; color: white; cursor: pointer; border-radius: 5px; font-weight: bold; margin-top: 10px;}
-        .estado-box { background: #222; padding: 15px; border-radius: 8px; margin-top: 20px; }
-        #video-container { margin-top: 20px; width: 100%; border-radius: 8px; overflow: hidden; background: #000; border: 2px solid #333; display: none; }
+        :root {
+            --bh-dark: #0b0b0c;
+            --bh-card: #121214;
+            --bh-purple: #7c3aed;
+            --bh-purple-hover: #6d28d9;
+            --bh-green: #10b981;
+            --bh-red: #ef4444;
+            --bh-border: #26262a;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100svh;
+            background: radial-gradient(circle at top, rgba(124,58,237,0.10), transparent 45%), var(--bh-dark);
+            color: #f4f4f5;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            padding: 32px 16px calc(32px + env(safe-area-inset-bottom));
+            padding-top: calc(32px + env(safe-area-inset-top));
+        }
+        .card {
+            background: var(--bh-card);
+            border: 1px solid var(--bh-border);
+            padding: 28px 24px;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+        }
+        .brand {
+            text-align: center;
+            margin-bottom: 4px;
+        }
+        .brand .wordmark {
+            font-size: 22px;
+            font-weight: 900;
+            letter-spacing: 0.03em;
+            color: #fff;
+        }
+        .brand .wordmark span { color: var(--bh-purple); }
+        .brand .tagline {
+            font-size: 12px;
+            color: #8b8b93;
+            margin-top: 2px;
+        }
+        h2 {
+            margin: 20px 0 4px;
+            font-size: 17px;
+            font-weight: 700;
+            text-align: center;
+            color: #fff;
+        }
+        .sub {
+            text-align: center;
+            font-size: 13px;
+            color: #8b8b93;
+            margin: 0 0 20px;
+        }
+        .search-row {
+            display: flex;
+            gap: 8px;
+        }
+        .input-wrap {
+            position: relative;
+            flex: 1;
+        }
+        .input-wrap i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6b6b72;
+            font-size: 13px;
+        }
+        input#orderId {
+            width: 100%;
+            padding: 13px 14px 13px 36px;
+            border-radius: 12px;
+            border: 1px solid var(--bh-border);
+            background: #1a1a1d;
+            color: #fff;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.15s ease;
+        }
+        input#orderId:focus { border-color: var(--bh-purple); }
+        input#orderId::placeholder { color: #6b6b72; }
+        button#btn-buscar {
+            padding: 0 20px;
+            background: var(--bh-purple);
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 14px;
+            transition: background 0.15s ease;
+        }
+        button#btn-buscar:hover { background: var(--bh-purple-hover); }
+        button#btn-buscar:disabled { opacity: 0.6; cursor: default; }
+
+        #resultado { margin-top: 20px; }
+
+        .estado-box {
+            background: #1a1a1d;
+            border: 1px solid var(--bh-border);
+            padding: 18px;
+            border-radius: 14px;
+        }
+        .estado-box .modelo {
+            font-size: 16px;
+            font-weight: 800;
+            color: #fff;
+            margin: 0 0 2px;
+        }
+        .estado-box .falla { font-size: 12px; color: #8b8b93; margin: 0; }
+
+        .msg-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .msg-box.loading { background: rgba(124,58,237,0.10); color: #c4b5fd; }
+        .msg-box.error { background: rgba(239,68,68,0.10); color: #fca5a5; }
+
+        /* --- Timeline de estado --- */
+        .timeline {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            position: relative;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 24px;
+            right: 24px;
+            height: 2px;
+            background: var(--bh-border);
+            z-index: 0;
+        }
+        .timeline .fill-line {
+            position: absolute;
+            top: 15px;
+            left: 24px;
+            right: 24px;
+            height: 2px;
+            background: var(--bh-purple);
+            z-index: 1;
+            transform-origin: left center;
+            transition: transform 0.4s ease;
+        }
+        .step {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+        .step .dot {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #1a1a1d;
+            border: 2px solid var(--bh-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #6b6b72;
+            transition: all 0.2s ease;
+        }
+        .step.done .dot {
+            background: var(--bh-purple);
+            border-color: var(--bh-purple);
+            color: #fff;
+        }
+        .step.current .dot {
+            background: var(--bh-green);
+            border-color: var(--bh-green);
+            color: #05221a;
+            box-shadow: 0 0 0 4px rgba(16,185,129,0.18);
+        }
+        .step .label {
+            margin-top: 6px;
+            font-size: 10px;
+            font-weight: 700;
+            text-align: center;
+            color: #6b6b72;
+            max-width: 60px;
+            line-height: 1.2;
+        }
+        .step.done .label, .step.current .label { color: #d4d4d8; }
+
+        .estado-actual {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 16px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            background: rgba(16,185,129,0.12);
+            color: var(--bh-green);
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .estado-actual.otro { background: rgba(124,58,237,0.12); color: #c4b5fd; }
+
+        #video-container {
+            margin-top: 18px;
+            width: 100%;
+            border-radius: 14px;
+            overflow: hidden;
+            background: #000;
+            border: 1px solid var(--bh-border);
+            display: none;
+        }
         video { width: 100%; display: block; }
-        .live-badge { display: inline-block; background: red; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; animation: pulse 1.5s infinite; margin-bottom: 10px;}
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .video-tag {
+            padding: 10px 12px;
+            background: #1a1a1d;
+            text-align: left;
+            font-size: 12px;
+            color: #a1a1aa;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--bh-red);
+            color: white;
+            padding: 3px 9px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 800;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.55; } 100% { opacity: 1; } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner {
+            width: 16px; height: 16px;
+            border: 2px solid rgba(196,181,253,0.3);
+            border-top-color: #c4b5fd;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            flex-shrink: 0;
+        }
+
+        .whatsapp-cta {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 22px;
+            padding-top: 18px;
+            border-top: 1px solid var(--bh-border);
+            font-size: 12px;
+            color: #8b8b93;
+        }
+        .whatsapp-cta a { color: var(--bh-green); font-weight: 700; text-decoration: none; }
+        .whatsapp-cta a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
     <div class="card">
-        <img src="logo-blackhouse.png" alt="BlackHouse" style="height: 50px; margin-bottom: 10px;" onerror="this.style.display='none'">
-        <h2 style="margin:0 0 15px 0;">Rastreo de Reparación</h2>
-        <input type="number" id="orderId" placeholder="Número de orden">
-        <button onclick="buscar()">Buscar Orden</button>
+        <div class="brand">
+            <div class="wordmark">BlackHouse<span>OS</span></div>
+            <div class="tagline">Rastreo de reparación en tiempo real</div>
+        </div>
+
+        <h2>¿Cómo va mi equipo?</h2>
+        <p class="sub">Ingresa el número de orden que te dieron al recibir tu equipo.</p>
+
+        <div class="search-row">
+            <div class="input-wrap">
+                <i class="fa-solid fa-hashtag"></i>
+                <input type="number" id="orderId" placeholder="N° de orden" inputmode="numeric">
+            </div>
+            <button id="btn-buscar" onclick="buscar()"><i class="fa-solid fa-magnifying-glass"></i></button>
+        </div>
+
         <div id="resultado"></div>
 
-        <div id="video-container">
-            <!-- Aquí se inyecta el video grabado o en vivo -->
+        <div id="video-container"></div>
+
+        <div class="whatsapp-cta">
+            <i class="fa-brands fa-whatsapp" style="color:var(--bh-green);"></i>
+            ¿Dudas con tu equipo? <a href="https://api.whatsapp.com/send?phone=51924171629&text=Hola%2C%20tengo%20una%20consulta%20sobre%20mi%20reparaci%C3%B3n" target="_blank" rel="noopener">Escríbenos</a>
         </div>
     </div>
 
@@ -33,6 +316,18 @@
         let supabaseClient;
         let peerConnection;
         let currentChannel;
+
+        // Orden real de estados en el flujo de reparación (coincide 1:1 con las
+        // opciones del select en el panel de escritorio: Recibido -> En Proceso
+        // -> Completado -> Entregado). Si el backend manda un estado que no está
+        // en esta lista (ej. "Devuelto"), no se rompe: simplemente no se pinta
+        // el timeline y se muestra el estado en texto plano.
+        const PASOS = [
+            { key: 'Recibido', label: 'Recibido', icon: 'fa-inbox' },
+            { key: 'En Proceso', label: 'En proceso', icon: 'fa-screwdriver-wrench' },
+            { key: 'Completado', label: 'Listo', icon: 'fa-circle-check' },
+            { key: 'Entregado', label: 'Entregado', icon: 'fa-box' },
+        ];
 
         async function initSupabase() {
             if (supabaseClient) return supabaseClient;
@@ -47,16 +342,49 @@
             }
         }
 
+        function renderTimeline(estadoActual) {
+            const idx = PASOS.findIndex(p => p.key === estadoActual);
+            if (idx === -1) {
+                return `<div class="estado-actual otro"><i class="fa-solid fa-circle-info"></i> ${escaparHtml(estadoActual)}</div>`;
+            }
+            const fraccion = idx / (PASOS.length - 1);
+            const steps = PASOS.map((p, i) => {
+                const cls = i < idx ? 'done' : (i === idx ? 'current' : '');
+                const iconoInterno = i < idx ? 'fa-check' : p.icon;
+                return `
+                    <div class="step ${cls}">
+                        <div class="dot"><i class="fa-solid ${iconoInterno}"></i></div>
+                        <div class="label">${p.label}</div>
+                    </div>`;
+            }).join('');
+            return `
+                <div class="timeline">
+                    <div class="fill-line" style="transform: scaleX(${fraccion});"></div>
+                    ${steps}
+                </div>
+                <div style="text-align:center;">
+                    <span class="estado-actual"><i class="fa-solid fa-circle-dot" style="font-size:8px;"></i> ${escaparHtml(estadoActual)}</span>
+                </div>`;
+        }
+
+        function escaparHtml(txt) {
+            const d = document.createElement('div');
+            d.textContent = txt || '';
+            return d.innerHTML;
+        }
+
         async function buscar() {
             const id = document.getElementById('orderId').value.trim();
             if (!id) return;
-            
+
             const resultado = document.getElementById('resultado');
             const vContainer = document.getElementById('video-container');
-            resultado.innerHTML = '<div class="estado-box">Buscando...</div>';
+            const btn = document.getElementById('btn-buscar');
+            btn.disabled = true;
+            resultado.innerHTML = '<div class="msg-box loading"><div class="spinner"></div> Buscando tu orden...</div>';
             vContainer.style.display = 'none';
             vContainer.innerHTML = '';
-            
+
             if (currentChannel) {
                 currentChannel.unsubscribe();
                 currentChannel = null;
@@ -78,34 +406,29 @@
                         single: true
                     })
                 });
-                
+
                 const { data, error } = await res.json();
-                
+
                 if (error || !data) {
-                    resultado.innerHTML = '<div class="estado-box" style="color:#ef4444;">Orden no encontrada.</div>';
+                    resultado.innerHTML = '<div class="msg-box error"><i class="fa-solid fa-triangle-exclamation"></i> No encontramos esa orden. Revisa el número e intenta de nuevo.</div>';
                 } else {
                     resultado.innerHTML = `
                         <div class="estado-box">
-                            <h3 style="margin: 0 0 10px 0;">${data.modelo}</h3>
-                            Estado: <strong style="color: #10b981;">${data.estado}</strong>
+                            <p class="modelo">${escaparHtml(data.modelo)}</p>
+                            ${renderTimeline(data.estado)}
                         </div>
                     `;
 
-                    // Lógica de video
                     if (data.modo_transmision === 'Grabado' && data.video_url) {
                         vContainer.style.display = 'block';
                         vContainer.innerHTML = `
-                            <div style="padding: 10px; background: #222; text-align: left; font-size: 13px; color: #aaa;">
-                                <i style="margin-right: 5px;">📼</i> Reparación Grabada
-                            </div>
+                            <div class="video-tag"><i class="fa-solid fa-video"></i> Reparación grabada</div>
                             <video src="${data.video_url}" controls playsinline></video>
                         `;
                     } else if (data.modo_transmision === 'En Vivo') {
                         vContainer.style.display = 'block';
                         vContainer.innerHTML = `
-                            <div style="padding: 10px; background: #222; text-align: left; font-size: 13px;">
-                                <span class="live-badge">EN VIVO</span> Conectando con el laboratorio...
-                            </div>
+                            <div class="video-tag"><span class="live-badge"><i class="fa-solid fa-tower-broadcast" style="font-size:9px;"></i> EN VIVO</span> Conectando con el laboratorio...</div>
                             <video id="liveVideo" autoplay playsinline muted></video>
                         `;
                         conectarEnVivo(id);
@@ -113,7 +436,9 @@
                 }
             } catch (err) {
                 console.error("Error al buscar", err);
-                resultado.innerHTML = '<div class="estado-box" style="color:#ef4444;">Error de conexión.</div>';
+                resultado.innerHTML = '<div class="msg-box error"><i class="fa-solid fa-plug-circle-exclamation"></i> Error de conexión. Intenta nuevamente.</div>';
+            } finally {
+                btn.disabled = false;
             }
         }
 
@@ -136,7 +461,6 @@
             peerConnection.ontrack = (event) => {
                 if (videoEl.srcObject !== event.streams[0]) {
                     videoEl.srcObject = event.streams[0];
-                    // Intentar reproducir con sonido si el navegador lo permite
                     videoEl.play().catch(e => {
                         videoEl.muted = true;
                         videoEl.play();
@@ -185,6 +509,10 @@
                     }
                 });
         }
+
+        document.getElementById('orderId').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') buscar();
+        });
 
         window.addEventListener('DOMContentLoaded', () => {
             const idDesdeUrl = new URLSearchParams(window.location.search).get('id');
