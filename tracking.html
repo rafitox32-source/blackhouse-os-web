@@ -121,6 +121,17 @@
             padding: 18px;
             border-radius: 14px;
         }
+        .estado-box .taller-nombre {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            color: var(--bh-purple);
+            margin: 0 0 6px;
+        }
         .estado-box .modelo {
             font-size: 16px;
             font-weight: 800;
@@ -128,6 +139,48 @@
             margin: 0 0 2px;
         }
         .estado-box .falla { font-size: 12px; color: #8b8b93; margin: 0; }
+
+        .entrega-estimada {
+            margin-top: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #a1a1aa;
+        }
+        .saldo-box {
+            margin-top: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #1a1a1d;
+            border: 1px solid var(--bh-border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 13px;
+        }
+        .saldo-box .valor { font-weight: 800; font-size: 15px; }
+        .saldo-box .valor.pendiente { color: var(--bh-red); }
+        .saldo-box .valor.saldado { color: var(--bh-green); }
+
+        .evidencia-box {
+            margin-top: 16px;
+        }
+        .evidencia-box p {
+            font-size: 11px;
+            font-weight: 700;
+            color: #8b8b93;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            margin: 0 0 8px;
+        }
+        .evidencia-box img {
+            width: 100%;
+            border-radius: 12px;
+            border: 1px solid var(--bh-border);
+            display: block;
+        }
 
         .msg-box {
             display: flex;
@@ -306,16 +359,22 @@
 
         <div id="video-container"></div>
 
-        <div class="whatsapp-cta">
-            <i class="fa-brands fa-whatsapp" style="color:var(--bh-green);"></i>
-            ¿Dudas con tu equipo? <a href="https://api.whatsapp.com/send?phone=51924171629&text=Hola%2C%20tengo%20una%20consulta%20sobre%20mi%20reparaci%C3%B3n" target="_blank" rel="noopener">Escríbenos</a>
-        </div>
+        <div id="whatsapp-cta-container"></div>
     </div>
 
     <script>
         let supabaseClient;
         let peerConnection;
         let currentChannel;
+
+        // El token solo llega por la URL (QR escaneado o link de WhatsApp), nunca
+        // se puede escribir a mano. Si el cliente cambia el número en el buscador,
+        // el token deja de ser válido para ese nuevo número (ver buscar()).
+        let idDesdeUrlActual = null;
+        let tokenDesdeUrlActual = null;
+
+        const SELECT_BASICO = 'modelo, estado, modo_transmision, video_url';
+        const SELECT_EXTENDIDO = 'modelo, estado, modo_transmision, video_url, empresa_id, fecha_cita, saldo, evidencia';
 
         // Orden real de estados en el flujo de reparación (coincide 1:1 con las
         // opciones del select en el panel de escritorio: Recibido -> En Proceso
@@ -373,6 +432,30 @@
             return d.innerHTML;
         }
 
+        function formatearFecha(fecha) {
+            if (!fecha) return null;
+            try {
+                return new Date(fecha + 'T00:00:00').toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' });
+            } catch (e) {
+                return fecha;
+            }
+        }
+
+        // Muestra el WhatsApp REAL del taller (empresas.telefono). Si el taller
+        // todavia no lo configuro (hoy es el caso de la mayoria), no se muestra
+        // ningun boton en vez de apuntar a un numero que no es el del taller.
+        function renderWhatsappCta(telefonoTaller) {
+            const cont = document.getElementById('whatsapp-cta-container');
+            if (!telefonoTaller) { cont.innerHTML = ''; return; }
+            const soloDigitos = String(telefonoTaller).replace(/\D/g, '');
+            const mensaje = encodeURIComponent('Hola, tengo una consulta sobre mi reparación.');
+            cont.innerHTML = `
+                <div class="whatsapp-cta">
+                    <i class="fa-brands fa-whatsapp" style="color:var(--bh-green);"></i>
+                    ¿Dudas con tu equipo? <a href="https://api.whatsapp.com/send?phone=51${soloDigitos}&text=${mensaje}" target="_blank" rel="noopener">Escríbenos</a>
+                </div>`;
+        }
+
         async function buscar() {
             const id = document.getElementById('orderId').value.trim();
             if (!id) return;
@@ -394,17 +477,26 @@
                 peerConnection = null;
             }
 
+            renderWhatsappCta(null);
+
+            // Solo se pide la version extendida (saldo, foto, nombre del taller) si
+            // el numero que se esta buscando es EXACTAMENTE el que vino con token en
+            // la URL (QR o link de WhatsApp). Si el cliente escribe otro numero a
+            // mano, no hay token para ese numero y se usa la consulta basica.
+            const tieneToken = tokenDesdeUrlActual && id === idDesdeUrlActual;
+            const cuerpo = {
+                action: 'select',
+                table: 'ordenes',
+                select: tieneToken ? SELECT_EXTENDIDO : SELECT_BASICO,
+                match: tieneToken ? { id: id, tracking_token: tokenDesdeUrlActual } : { id: id },
+                single: true
+            };
+
             try {
                 const res = await fetch('/api/db', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'select',
-                        table: 'ordenes',
-                        select: 'modelo, estado, modo_transmision, video_url',
-                        match: { id: id },
-                        single: true
-                    })
+                    body: JSON.stringify(cuerpo)
                 });
 
                 const { data, error } = await res.json();
@@ -412,10 +504,57 @@
                 if (error || !data) {
                     resultado.innerHTML = '<div class="msg-box error"><i class="fa-solid fa-triangle-exclamation"></i> No encontramos esa orden. Revisa el número e intenta de nuevo.</div>';
                 } else {
+                    let tallerHtml = '';
+                    if (tieneToken && data.empresa_id) {
+                        try {
+                            const resEmpresa = await fetch('/api/db', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    action: 'select', table: 'empresas', select: 'nombre, telefono',
+                                    match: { id: data.empresa_id }, single: true
+                                })
+                            });
+                            const { data: empresa } = await resEmpresa.json();
+                            if (empresa && empresa.nombre) {
+                                tallerHtml = `<p class="taller-nombre"><i class="fa-solid fa-shop"></i> ${escaparHtml(empresa.nombre)}</p>`;
+                            }
+                            renderWhatsappCta(empresa ? empresa.telefono : null);
+                        } catch (e) { console.error('No se pudo cargar el taller', e); }
+                    }
+
+                    const fechaEstim = tieneToken ? formatearFecha(data.fecha_cita) : null;
+                    const entregaHtml = (fechaEstim && data.estado !== 'Entregado')
+                        ? `<div class="entrega-estimada"><i class="fa-regular fa-calendar"></i> Entrega estimada: <strong style="color:#d4d4d8;">${escaparHtml(fechaEstim)}</strong></div>`
+                        : '';
+
+                    let saldoHtml = '';
+                    if (tieneToken && typeof data.saldo === 'number') {
+                        const pendiente = data.saldo > 0;
+                        saldoHtml = `
+                            <div class="saldo-box">
+                                <span>${pendiente ? 'Saldo pendiente' : 'Estado de cuenta'}</span>
+                                <span class="valor ${pendiente ? 'pendiente' : 'saldado'}">${pendiente ? 'S/ ' + data.saldo.toFixed(2) : 'Sin saldo pendiente ✓'}</span>
+                            </div>`;
+                    }
+
+                    let evidenciaHtml = '';
+                    if (tieneToken && data.evidencia) {
+                        evidenciaHtml = `
+                            <div class="evidencia-box">
+                                <p><i class="fa-solid fa-camera"></i> Así lo recibimos</p>
+                                <img src="${data.evidencia}" alt="Foto del equipo al recibirlo">
+                            </div>`;
+                    }
+
                     resultado.innerHTML = `
                         <div class="estado-box">
+                            ${tallerHtml}
                             <p class="modelo">${escaparHtml(data.modelo)}</p>
                             ${renderTimeline(data.estado)}
+                            ${entregaHtml}
+                            ${saldoHtml}
+                            ${evidenciaHtml}
                         </div>
                     `;
 
@@ -515,8 +654,11 @@
         });
 
         window.addEventListener('DOMContentLoaded', () => {
-            const idDesdeUrl = new URLSearchParams(window.location.search).get('id');
+            const params = new URLSearchParams(window.location.search);
+            const idDesdeUrl = params.get('id');
             if (idDesdeUrl) {
+                idDesdeUrlActual = idDesdeUrl;
+                tokenDesdeUrlActual = params.get('t');
                 document.getElementById('orderId').value = idDesdeUrl;
                 buscar();
             }

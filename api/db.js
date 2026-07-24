@@ -151,12 +151,21 @@ module.exports = async (req, res) => {
     const { action, table, data, match, select, order, limit, fn, params } = req.body;
 
     // --- PROTECCIÓN DE RUTAS PÚBLICAS ---
-    // Estas consultas se pueden hacer SIN iniciar sesión (Tracking y Resellers)
-    const isPublicQuery =
-      (action === 'select' && table === 'ordenes' && select === 'modelo, estado') || // Tracking (legacy, sin video)
-      (action === 'select' && table === 'ordenes' && select === 'modelo, estado, modo_transmision, video_url') || // Tracking (con video/en vivo)
-      (action === 'select' && table === 'usuarios' && select === 'nombre_completo, nickname, avatar, estado, pais'); // Resellers
-
+    // Estas consultas se pueden hacer SIN iniciar sesión (Tracking y Resellers).
+    // Lista blanca explicita de tabla+select exactos: nunca "*", para que un
+    // cliente no autenticado no pueda pedir columnas nuevas sin que alguien
+    // las apruebe aqui primero.
+    const CONSULTAS_PUBLICAS = [
+      { table: 'ordenes', select: 'modelo, estado' }, // Tracking legacy (links ya impresos antes del timeline)
+      { table: 'ordenes', select: 'modelo, estado, modo_transmision, video_url' }, // Tracking basico (con video/en vivo, sin token)
+      // Tracking extendido: requiere que el cliente mande tambien el token en "match"
+      // (ver mas abajo, en la seccion "select"), asi que aunque el select traiga
+      // saldo/evidencia, adivinar un "id" sin el token correcto no devuelve nada.
+      { table: 'ordenes', select: 'modelo, estado, modo_transmision, video_url, empresa_id, fecha_cita, saldo, evidencia' },
+      { table: 'empresas', select: 'nombre, telefono' }, // Nombre/telefono del taller para el tracking
+      { table: 'usuarios', select: 'nombre_completo, nickname, avatar, estado, pais' }, // Resellers
+    ];
+    const isPublicQuery = action === 'select' && CONSULTAS_PUBLICAS.some(c => c.table === table && c.select === select);
     let userContext = null;
 
     if (!isPublicQuery) {
