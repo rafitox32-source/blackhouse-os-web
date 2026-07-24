@@ -269,17 +269,8 @@ module.exports = async (req, res) => {
         .single();
       if (errPedido) return res.status(400).json({ error: errPedido.message });
 
-      // Notificacion en tiempo real: mismo canal de chat que ya usa el panel
-      // de escritorio para avisos de ordenes (canal "hardware").
-      const resumen = itemsFinales.map(it => `${it.nombre} x${it.cantidad}`).join(', ');
-      await supabase.from('chat_mensajes').insert([{
-        usuario: '🛍️ Cliente',
-        rol: 'SISTEMA',
-        mensaje: `🛍️ El cliente de la orden <b>#${orden.id}</b> [${orden.modelo}] pidió: ${resumen} (Total aprox. S/ ${total.toFixed(2)}). Revisar y agregar a la orden.`,
-        tipo: 'sistema',
-        canal: 'hardware'
-      }]);
-
+      // La notificacion ya NO va por el chat: el panel de escritorio consulta
+      // pedidos_accesorios directamente (badge de campana, ver index.html).
       return res.status(200).json({ success: true, pedidoId: pedido.id, total, items: itemsFinales });
     }
 
