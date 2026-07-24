@@ -356,6 +356,26 @@
             border-top: 1px solid var(--bh-border);
         }
         .tienda-item:first-of-type { border-top: none; }
+        .tienda-item .foto {
+            width: 44px; height: 44px;
+            border-radius: 10px;
+            object-fit: cover;
+            background: #1a1a1d;
+            border: 1px solid var(--bh-border);
+            flex-shrink: 0;
+        }
+        .tienda-item .foto-vacia {
+            width: 44px; height: 44px;
+            border-radius: 10px;
+            background: #1a1a1d;
+            border: 1px solid var(--bh-border);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #3f3f46;
+            font-size: 16px;
+        }
         .tienda-item .info { flex: 1; min-width: 0; }
         .tienda-item .nombre { font-size: 13px; font-weight: 700; color: #fff; }
         .tienda-item .precio { font-size: 12px; color: var(--bh-green); font-weight: 700; }
@@ -533,11 +553,13 @@
         }
 
         // --- TIENDA DE ACCESORIOS MIENTRAS ESPERA ---
-        // El pedido no se guarda en ningun lado: arma un mensaje de WhatsApp con
-        // lo elegido y lo manda al numero real del taller (mismo de renderWhatsappCta).
+        // El pedido queda PENDIENTE (accion "pedido_accesorio" en api/db.js):
+        // no modifica costo/saldo de la orden solo, eso lo hace un humano del
+        // taller al revisarlo. Solo se puede usar si se tiene el tracking_token
+        // exacto de esa orden (no alcanza con adivinar el numero).
         let carritoAccesorios = {};
-        let telefonoTallerTienda = null;
         let ordenIdTienda = null;
+        let tokenTiendaActual = null;
 
         // La mica del equipo se busca por modelo contra "modelo_compatible" del
         // producto. No se muestran las decenas de micas de otros modelos: como
@@ -557,12 +579,10 @@
             return normalizarModeloTienda(txt).split(/[\s/]+/).filter(tok => tok.length >= 2 && /\d/.test(tok));
         }
 
-        async function cargarTienda(empresaId, telefono, ordenId, modeloOrden) {
+        async function cargarTienda(empresaId, ordenId, modeloOrden, trackingToken) {
             const cardTienda = document.getElementById('tienda-card');
-            if (!telefono) { cardTienda.style.display = 'none'; return; }
-
-            telefonoTallerTienda = telefono;
             ordenIdTienda = ordenId;
+            tokenTiendaActual = trackingToken;
             carritoAccesorios = {};
 
             try {
@@ -570,7 +590,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        action: 'select', table: 'productos', select: 'id, nombre, precio, stock, categoria, modelo_compatible',
+                        action: 'select', table: 'productos', select: 'id, nombre, precio, stock, categoria, modelo_compatible, foto_url',
                         match: { empresa_id: empresaId }, order: { column: 'nombre', ascending: true }, limit: 100
                     })
                 });
@@ -599,6 +619,9 @@
                     <div id="tienda-lista">
                         ${data.map(p => `
                             <div class="tienda-item">
+                                ${p.foto_url
+                                    ? `<img class="foto" src="${p.foto_url}" alt="${escaparHtml(p.nombre)}">`
+                                    : `<div class="foto-vacia"><i class="fa-solid fa-image"></i></div>`}
                                 <div class="info">
                                     <div class="nombre">${escaparHtml(p.nombre)}</div>
                                     <div class="precio">S/ ${Number(p.precio || 0).toFixed(2)}</div>
@@ -613,9 +636,10 @@
                     </div>
                     <div class="tienda-carrito">
                         <div class="subtotal"><span>Subtotal del pedido</span><strong id="tienda-subtotal">S/ 0.00</strong></div>
-                        <button class="btn-pedir" id="btn-pedir-tienda" disabled onclick="pedirAccesoriosPorWhatsapp()">
-                            <i class="fa-brands fa-whatsapp"></i> Pedir por WhatsApp
+                        <button class="btn-pedir" id="btn-pedir-tienda" disabled onclick="confirmarPedidoAccesorios()">
+                            <i class="fa-solid fa-cart-shopping"></i> Confirmar pedido
                         </button>
+                        <p style="font-size:11px; color:#6b6b72; text-align:center; margin:10px 0 0;">Un técnico del taller lo revisará y lo sumará a tu orden #${escaparHtml(String(ordenIdTienda))}. Lo pagas junto con tu reparación al recogerla.</p>
                     </div>
                 `;
             } catch (e) {
@@ -638,14 +662,49 @@
             document.getElementById('btn-pedir-tienda').disabled = items.length === 0;
         }
 
-        function pedirAccesoriosPorWhatsapp() {
-            const items = Object.values(carritoAccesorios);
-            if (items.length === 0 || !telefonoTallerTienda) return;
-            const lineas = items.map(it => `- ${it.nombre} x${it.cantidad}`).join('\n');
-            const subtotal = items.reduce((s, it) => s + it.precio * it.cantidad, 0);
-            const mensaje = `Hola, quiero pedir esto junto con mi reparación #${ordenIdTienda}:\n${lineas}\n\nSubtotal aprox: S/ ${subtotal.toFixed(2)}`;
-            const soloDigitos = String(telefonoTallerTienda).replace(/\D/g, '');
-            window.open(`https://api.whatsapp.com/send?phone=51${soloDigitos}&text=${encodeURIComponent(mensaje)}`, '_blank');
+        async function confirmarPedidoAccesorios() {
+            const items = Object.entries(carritoAccesorios).map(([id, it]) => ({ producto_id: Number(id), cantidad: it.cantidad }));
+            if (items.length === 0 || !tokenTiendaActual) return;
+
+            const btn = document.getElementById('btn-pedir-tienda');
+            const textoOriginal = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div> Enviando...';
+
+            const cardTienda = document.getElementById('tienda-card');
+            try {
+                const res = await fetch('/api/db', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'pedido_accesorio', orden_id: ordenIdTienda, tracking_token: tokenTiendaActual, items })
+                });
+                const { success, error } = await res.json();
+
+                if (!success) {
+                    btn.disabled = false;
+                    btn.innerHTML = textoOriginal;
+                    let msg = document.getElementById('tienda-error-msg');
+                    if (!msg) {
+                        msg = document.createElement('div');
+                        msg.id = 'tienda-error-msg';
+                        msg.className = 'msg-box error';
+                        msg.style.marginTop = '12px';
+                        cardTienda.appendChild(msg);
+                    }
+                    msg.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${escaparHtml(error || 'No se pudo enviar el pedido.')}`;
+                    return;
+                }
+
+                carritoAccesorios = {};
+                cardTienda.innerHTML = `
+                    <div class="tienda-header"><i class="fa-solid fa-circle-check" style="color:var(--bh-green);"></i><h3>¡Pedido enviado!</h3></div>
+                    <p class="tienda-sub" style="margin-bottom:0;">Quedó registrado junto a tu orden #${escaparHtml(String(ordenIdTienda))}. Un técnico del taller lo va a revisar y sumarlo a tu cuenta — lo pagas junto con tu reparación al recogerla.</p>
+                `;
+            } catch (e) {
+                console.error('Error enviando el pedido de accesorios', e);
+                btn.disabled = false;
+                btn.innerHTML = textoOriginal;
+            }
         }
 
         async function buscar() {
@@ -713,8 +772,11 @@
                                 tallerHtml = `<p class="taller-nombre"><i class="fa-solid fa-shop"></i> ${escaparHtml(empresa.nombre)}</p>`;
                             }
                             renderWhatsappCta(empresa ? empresa.telefono : null);
-                            if (empresa && empresa.telefono) cargarTienda(data.empresa_id, empresa.telefono, id, data.modelo);
                         } catch (e) { console.error('No se pudo cargar el taller', e); }
+
+                        // La tienda no depende del telefono del taller (el pedido ya no
+                        // se manda por WhatsApp, queda pendiente en el sistema).
+                        cargarTienda(data.empresa_id, id, data.modelo, tokenDesdeUrlActual);
                     }
 
                     const fechaEstim = tieneToken ? formatearFecha(data.fecha_cita) : null;

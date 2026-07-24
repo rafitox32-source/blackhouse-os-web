@@ -169,13 +169,17 @@ module.exports = async (req, res) => {
       // scrapear el inventario completo (pantallas, etc.) de ningun taller.
       // El cliente filtra "Micas" a una sola fila que coincida con el modelo de
       // SU equipo (no se muestran las 100+ micas de otros modelos).
-      { table: 'productos', select: 'id, nombre, precio, stock, categoria, modelo_compatible' },
+      { table: 'productos', select: 'id, nombre, precio, stock, categoria, modelo_compatible, foto_url' },
       { table: 'usuarios', select: 'nombre_completo, nickname, avatar, estado, pais' }, // Resellers
     ];
     const isPublicQuery = action === 'select' && CONSULTAS_PUBLICAS.some(c => c.table === table && c.select === select);
+    // "pedido_accesorio" tambien es publico (cliente del tracking, sin login):
+    // no se valida con JWT sino con el tracking_token exacto de esa orden,
+    // verificado mas abajo en su propio bloque.
+    const esAccionPublica = isPublicQuery || action === 'pedido_accesorio';
     let userContext = null;
 
-    if (!isPublicQuery) {
+    if (!esAccionPublica) {
       // Si NO es pública, exigimos el token JWT del usuario
       const authHeader = req.headers.authorization;
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -203,6 +207,80 @@ module.exports = async (req, res) => {
         return res.status(400).json({ error: resultado.error.message });
       }
       return res.status(200).json({ success: true, data: resultado.data });
+    }
+
+    // --- PEDIDO DE ACCESORIOS (publico, tracking del cliente) ---
+    // El cliente arma un pedido desde el tracking y queda "pendiente": NUNCA
+    // toca costo/saldo de la orden por si solo, eso lo hace un humano del
+    // taller desde el panel de escritorio (decision explicita, no automatica).
+    // Nunca se confia en precio/nombre que mande el navegador: todo se vuelve
+    // a consultar aqui con la llave maestra. El unico "acceso" que demuestra
+    // el cliente es conocer el tracking_token exacto de ESA orden.
+    if (action === 'pedido_accesorio') {
+      const { orden_id, tracking_token, items } = req.body;
+      if (!orden_id || !tracking_token || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ error: 'Faltan datos del pedido.' });
+      }
+
+      const { data: orden, error: errOrden } = await supabase
+        .from('ordenes')
+        .select('id, empresa_id, modelo')
+        .eq('id', orden_id)
+        .eq('tracking_token', tracking_token)
+        .single();
+      if (errOrden || !orden) {
+        return res.status(404).json({ error: 'Orden no encontrada o link inválido.' });
+      }
+
+      const idsPedidos = items.map(it => Number(it && it.producto_id)).filter(n => Number.isInteger(n) && n > 0);
+      if (idsPedidos.length === 0) {
+        return res.status(400).json({ error: 'Pedido vacío.' });
+      }
+
+      // Se re-consultan precio/stock/categoria reales: jamas lo que mande el cliente.
+      const { data: productosReales, error: errProd } = await supabase
+        .from('productos')
+        .select('id, nombre, precio, stock, categoria')
+        .in('id', idsPedidos)
+        .eq('empresa_id', orden.empresa_id)
+        .in('categoria', ['Accesorios', 'Micas'])
+        .gt('stock', 0);
+      if (errProd) return res.status(400).json({ error: errProd.message });
+
+      const itemsFinales = [];
+      let total = 0;
+      for (const it of items) {
+        const prod = (productosReales || []).find(p => p.id === Number(it.producto_id));
+        if (!prod) continue; // ignora productos que no existan/no sean de esa empresa/categoria
+        const cantidad = Math.min(Math.max(parseInt(it.cantidad, 10) || 0, 0), 20);
+        if (cantidad <= 0) continue;
+        itemsFinales.push({ producto_id: prod.id, nombre: prod.nombre, precio: prod.precio, cantidad });
+        total += prod.precio * cantidad;
+      }
+
+      if (itemsFinales.length === 0) {
+        return res.status(400).json({ error: 'Ninguno de los productos pedidos está disponible.' });
+      }
+
+      const { data: pedido, error: errPedido } = await supabase
+        .from('pedidos_accesorios')
+        .insert([{ orden_id: orden.id, empresa_id: orden.empresa_id, items: itemsFinales, total }])
+        .select()
+        .single();
+      if (errPedido) return res.status(400).json({ error: errPedido.message });
+
+      // Notificacion en tiempo real: mismo canal de chat que ya usa el panel
+      // de escritorio para avisos de ordenes (canal "hardware").
+      const resumen = itemsFinales.map(it => `${it.nombre} x${it.cantidad}`).join(', ');
+      await supabase.from('chat_mensajes').insert([{
+        usuario: '🛍️ Cliente',
+        rol: 'SISTEMA',
+        mensaje: `🛍️ El cliente de la orden <b>#${orden.id}</b> [${orden.modelo}] pidió: ${resumen} (Total aprox. S/ ${total.toFixed(2)}). Revisar y agregar a la orden.`,
+        tipo: 'sistema',
+        canal: 'hardware'
+      }]);
+
+      return res.status(200).json({ success: true, pedidoId: pedido.id, total, items: itemsFinales });
     }
 
     // --- MATRIZ DE PERMISOS: bloquear tablas/acciones no autorizadas ---
