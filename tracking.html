@@ -21,10 +21,15 @@
             --bh-border: #26262a;
         }
         * { box-sizing: border-box; }
+        html { background: var(--bh-dark); }
         body {
             margin: 0;
             min-height: 100svh;
-            background: radial-gradient(circle at top, rgba(124,58,237,0.10), transparent 45%), var(--bh-dark);
+            position: relative;
+            background:
+                radial-gradient(circle at top, rgba(124,58,237,0.14), transparent 45%),
+                radial-gradient(circle, rgba(255,255,255,0.035) 1px, transparent 1px) 0 0/26px 26px,
+                var(--bh-dark);
             color: #f4f4f5;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             display: flex;
@@ -32,6 +37,26 @@
             align-items: center;
             padding: 32px 16px calc(32px + env(safe-area-inset-bottom));
             padding-top: calc(32px + env(safe-area-inset-top));
+            overflow-x: hidden;
+        }
+        /* Manchas de luz ambientales, fijas al viewport, detras de todo */
+        body::before, body::after {
+            content: '';
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(70px);
+            z-index: -1;
+            pointer-events: none;
+        }
+        body::before {
+            width: 340px; height: 340px;
+            top: -120px; left: -100px;
+            background: rgba(124,58,237,0.22);
+        }
+        body::after {
+            width: 300px; height: 300px;
+            bottom: -100px; right: -100px;
+            background: rgba(16,185,129,0.16);
         }
         .card {
             background: var(--bh-card);
@@ -195,6 +220,36 @@
         .msg-box.loading { background: rgba(124,58,237,0.10); color: #c4b5fd; }
         .msg-box.error { background: rgba(239,68,68,0.10); color: #fca5a5; }
 
+        /* --- "Cómo funciona": llena el espacio antes de buscar una orden --- */
+        #como-funciona {
+            margin-top: 24px;
+            padding-top: 22px;
+            border-top: 1px solid var(--bh-border);
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        #como-funciona .paso {
+            text-align: center;
+        }
+        #como-funciona .icono {
+            width: 42px; height: 42px;
+            margin: 0 auto 8px;
+            border-radius: 12px;
+            background: rgba(124,58,237,0.12);
+            border: 1px solid rgba(124,58,237,0.25);
+            color: var(--bh-purple);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+        #como-funciona .texto {
+            font-size: 11px;
+            color: #a1a1aa;
+            line-height: 1.35;
+        }
+
         /* --- Timeline de estado --- */
         .timeline {
             display: flex;
@@ -348,48 +403,61 @@
         .tienda-header h3 { margin: 0; font-size: 15px; color: #fff; }
         .tienda-sub { font-size: 12px; color: #8b8b93; margin: 0 0 16px; }
 
+        .tienda-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
         .tienda-item {
             display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 0;
-            border-top: 1px solid var(--bh-border);
+            flex-direction: column;
+            background: #17171a;
+            border: 1px solid var(--bh-border);
+            border-radius: 14px;
+            overflow: hidden;
+            transition: transform 0.15s ease, border-color 0.15s ease;
         }
-        .tienda-item:first-of-type { border-top: none; }
-        .tienda-item .foto {
-            width: 44px; height: 44px;
-            border-radius: 10px;
+        .tienda-item:hover { transform: translateY(-2px); border-color: rgba(124,58,237,0.4); }
+        .tienda-item .foto,
+        .tienda-item .foto-vacia {
+            width: 100%;
+            aspect-ratio: 1 / 1;
             object-fit: cover;
             background: #1a1a1d;
-            border: 1px solid var(--bh-border);
-            flex-shrink: 0;
+            border-bottom: 1px solid var(--bh-border);
         }
         .tienda-item .foto-vacia {
-            width: 44px; height: 44px;
-            border-radius: 10px;
-            background: #1a1a1d;
-            border: 1px solid var(--bh-border);
-            flex-shrink: 0;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #3f3f46;
-            font-size: 16px;
+            font-size: 26px;
         }
-        .tienda-item .info { flex: 1; min-width: 0; }
-        .tienda-item .nombre { font-size: 13px; font-weight: 700; color: #fff; }
-        .tienda-item .precio { font-size: 12px; color: var(--bh-green); font-weight: 700; }
+        .tienda-item .info { padding: 10px 10px 2px; min-width: 0; }
+        .tienda-item .nombre {
+            font-size: 12px;
+            font-weight: 700;
+            color: #fff;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            min-height: 2.6em;
+        }
+        .tienda-item .precio { font-size: 13px; color: var(--bh-green); font-weight: 800; margin-top: 4px; }
         .tienda-item .stepper {
             display: flex;
             align-items: center;
-            gap: 8px;
+            justify-content: space-between;
+            gap: 6px;
             background: #1a1a1d;
             border: 1px solid var(--bh-border);
             border-radius: 10px;
             padding: 4px 6px;
+            margin: 8px 10px 10px;
         }
         .tienda-item .stepper button {
-            width: 22px; height: 22px;
+            width: 24px; height: 24px;
             border-radius: 6px;
             border: none;
             background: #26262a;
@@ -454,6 +522,21 @@
         <div id="video-container"></div>
 
         <div id="whatsapp-cta-container"></div>
+
+        <div id="como-funciona">
+            <div class="paso">
+                <div class="icono"><i class="fa-solid fa-qrcode"></i></div>
+                <div class="texto">Escanea el QR o escribe tu N° de orden</div>
+            </div>
+            <div class="paso">
+                <div class="icono"><i class="fa-solid fa-satellite-dish"></i></div>
+                <div class="texto">Mira el estado en tiempo real, sin llamar</div>
+            </div>
+            <div class="paso">
+                <div class="icono"><i class="fa-solid fa-bag-shopping"></i></div>
+                <div class="texto">Aprovecha y pide accesorios mientras esperas</div>
+            </div>
+        </div>
     </div>
 
     <div id="tienda-card" class="card" style="display:none;"></div>
@@ -616,7 +699,7 @@
                 cardTienda.innerHTML = `
                     <div class="tienda-header"><i class="fa-solid fa-bag-shopping"></i><h3>Mientras esperas</h3></div>
                     <p class="tienda-sub">¿Quieres aprovechar y pedir algún accesorio junto con tu equipo?</p>
-                    <div id="tienda-lista">
+                    <div id="tienda-lista" class="tienda-grid">
                         ${data.map(p => `
                             <div class="tienda-item">
                                 ${p.foto_url
@@ -730,6 +813,8 @@
 
             renderWhatsappCta(null);
             document.getElementById('tienda-card').style.display = 'none';
+            const comoFunciona = document.getElementById('como-funciona');
+            if (comoFunciona) comoFunciona.style.display = 'none';
 
             // Solo se pide la version extendida (saldo, foto, nombre del taller) si
             // el numero que se esta buscando es EXACTAMENTE el que vino con token en
