@@ -36,11 +36,93 @@
     <style>
         @keyframes floatOrb { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
         .orb { animation: floatOrb 7s ease-in-out infinite; }
-        .cat-card { transition: transform 0.2s ease, border-color 0.2s ease; }
+        .cat-card { transition: transform 0.2s ease, border-color 0.2s ease; overflow: hidden; }
         .cat-card:hover { transform: translateY(-3px); }
+        .cat-shot {
+            width: 100%;
+            aspect-ratio: 16 / 10;
+            object-fit: cover;
+            object-position: top;
+            display: block;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            background: #050505;
+        }
+        .cat-shot-phone {
+            width: 100%;
+            height: 280px;
+            object-fit: contain;
+            display: block;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            background: #050505;
+            padding-top: 14px;
+        }
+
+        /* --- Intro de video al abrir el QR --- */
+        #intro-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease;
+        }
+        #intro-overlay.oculto {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #intro-video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        #intro-skip {
+            position: fixed;
+            bottom: max(20px, env(safe-area-inset-bottom));
+            right: 20px;
+            z-index: 10000;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 10px 18px;
+            border-radius: 999px;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+        }
+        #intro-skip:hover { background: rgba(255,255,255,0.16); }
     </style>
 </head>
 <body class="bg-bhDark text-gray-100 font-sans antialiased selection:bg-bhPurple selection:text-white">
+
+    <!-- Intro: video de bienvenida antes de mostrar las funciones -->
+    <div id="intro-overlay">
+        <video id="intro-video" autoplay muted playsinline webkit-playsinline src="assets/video/intro.mp4"></video>
+    </div>
+    <button id="intro-skip" onclick="cerrarIntro()">Saltar <i class="fa-solid fa-forward"></i></button>
+    <script>
+        function cerrarIntro() {
+            const overlay = document.getElementById('intro-overlay');
+            const skip = document.getElementById('intro-skip');
+            const video = document.getElementById('intro-video');
+            if (overlay.classList.contains('oculto')) return;
+            overlay.classList.add('oculto');
+            skip.style.display = 'none';
+            video.pause();
+            setTimeout(() => { overlay.style.display = 'none'; }, 550);
+        }
+        document.getElementById('intro-video').addEventListener('ended', cerrarIntro);
+        // Si el video no puede cargar/reproducirse (bloqueo del navegador, archivo
+        // faltante, etc.), no dejamos al visitante mirando una pantalla negra:
+        // se salta solo a las funciones.
+        document.getElementById('intro-video').addEventListener('error', cerrarIntro);
+        setTimeout(() => {
+            const v = document.getElementById('intro-video');
+            if (v.paused) cerrarIntro();
+        }, 1200);
+    </script>
 
     <!-- Fondo ambiental -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none -z-10">
@@ -78,92 +160,116 @@
     <!-- Categorías -->
     <main class="px-4 max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4 pb-16">
 
-        <div class="cat-card bg-bhCard border border-gray-800/60 rounded-2xl p-6">
-            <div class="w-11 h-11 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-4 text-xl"><i class="fa-solid fa-clipboard-list"></i></div>
-            <h3 class="text-lg font-bold text-white mb-3">Recepción con IA</h3>
-            <ul class="text-sm text-gray-400 space-y-2">
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>La IA traduce lo que dice el cliente en un pre-diagnóstico técnico al instante</li>
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Escaneo de IMEI por cámara, foto de evidencia y firma digital del cliente</li>
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Reconoce clientes recurrentes y sugiere stock compatible al instante</li>
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Ticket con QR de rastreo para que el cliente vea el avance sin llamar</li>
-            </ul>
+        <div class="cat-card bg-bhCard border border-gray-800/60 rounded-2xl">
+            <img class="cat-shot" src="assets/capturas/recepcion.png" alt="Pantalla de Recepción de BlackHouse OS" loading="lazy">
+            <div class="p-6">
+                <div class="w-11 h-11 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-4 text-xl"><i class="fa-solid fa-clipboard-list"></i></div>
+                <h3 class="text-lg font-bold text-white mb-3">Recepción con IA</h3>
+                <ul class="text-sm text-gray-400 space-y-2">
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>La IA traduce lo que dice el cliente en un pre-diagnóstico técnico al instante</li>
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Escaneo de IMEI por cámara, foto de evidencia y firma digital del cliente</li>
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Reconoce clientes recurrentes y sugiere stock compatible al instante</li>
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Ticket con QR de rastreo para que el cliente vea el avance sin llamar</li>
+                </ul>
+            </div>
         </div>
 
-        <div class="cat-card bg-bhCard border border-gray-800/60 rounded-2xl p-6">
-            <div class="w-11 h-11 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-4 text-xl"><i class="fa-solid fa-screwdriver-wrench"></i></div>
-            <h3 class="text-lg font-bold text-white mb-3">Taller y Control de Trabajo</h3>
-            <ul class="text-sm text-gray-400 space-y-2">
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Tablero Kanban: mira de un vistazo dónde está atascado cada equipo</li>
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Los repuestos usados descuentan stock solos, cero fugas silenciosas</li>
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Cobra trabajo extra o repuestos externos sobre una orden ya abierta</li>
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Devoluciones de clientes con reintegro automático de stock</li>
-            </ul>
+        <div class="cat-card bg-bhCard border border-gray-800/60 rounded-2xl">
+            <img class="cat-shot" src="assets/capturas/taller.png" alt="Control de Taller de BlackHouse OS" loading="lazy">
+            <div class="p-6">
+                <div class="w-11 h-11 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-4 text-xl"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+                <h3 class="text-lg font-bold text-white mb-3">Taller y Control de Trabajo</h3>
+                <ul class="text-sm text-gray-400 space-y-2">
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Tablero Kanban: mira de un vistazo dónde está atascado cada equipo</li>
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Los repuestos usados descuentan stock solos, cero fugas silenciosas</li>
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Cobra trabajo extra o repuestos externos sobre una orden ya abierta</li>
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Devoluciones de clientes con reintegro automático de stock</li>
+                </ul>
+            </div>
         </div>
 
-        <div class="cat-card bg-bhCard border border-gray-800/60 rounded-2xl p-6">
-            <div class="w-11 h-11 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-4 text-xl"><i class="fa-solid fa-flask"></i></div>
-            <h3 class="text-lg font-bold text-white mb-3">Laboratorio con IA</h3>
-            <ul class="text-sm text-gray-400 space-y-2">
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Copiloto de microsoldadura: sugiere líneas a medir e ICs sospechosos</li>
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Calculadora de Ley de Ohm y repositorio de firmware integrados</li>
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Software "Ambición" de utilidades, lanzado con un clic desde la app</li>
-            </ul>
+        <div class="cat-card bg-bhCard border border-gray-800/60 rounded-2xl">
+            <img class="cat-shot" src="assets/capturas/laboratorio.png" alt="Laboratorio Técnico de BlackHouse OS" loading="lazy">
+            <div class="p-6">
+                <div class="w-11 h-11 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-4 text-xl"><i class="fa-solid fa-flask"></i></div>
+                <h3 class="text-lg font-bold text-white mb-3">Laboratorio con IA</h3>
+                <ul class="text-sm text-gray-400 space-y-2">
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Copiloto de microsoldadura: sugiere líneas a medir e ICs sospechosos</li>
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Calculadora de Ley de Ohm y repositorio de firmware integrados</li>
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Software "Ambición" de utilidades, lanzado con un clic desde la app</li>
+                </ul>
+            </div>
         </div>
 
-        <div class="cat-card bg-bhCard border border-bhPurple/30 rounded-2xl p-6 relative overflow-hidden">
-            <span class="absolute top-3 right-3 text-[9px] font-black uppercase tracking-widest bg-bhPurple text-white px-2 py-1 rounded-full">Exclusivo</span>
-            <div class="w-11 h-11 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-4 text-xl"><i class="fa-solid fa-cube"></i></div>
-            <h3 class="text-lg font-bold text-white mb-3">Holograma 3D y Video en Vivo</h3>
-            <ul class="text-sm text-gray-400 space-y-2">
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Arma un modelo 3D real del equipo, pieza por pieza, mientras lo desarmas</li>
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Base de piezas compartida entre todos los talleres que usan el sistema</li>
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Transmite la reparación EN VIVO y el cliente la ve desde su celular</li>
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Graba el proceso completo con overlays de marca, estilo streaming</li>
-            </ul>
+        <div class="cat-card bg-bhCard border border-bhPurple/30 rounded-2xl relative">
+            <span class="absolute top-3 right-3 z-10 text-[9px] font-black uppercase tracking-widest bg-bhPurple text-white px-2 py-1 rounded-full">Exclusivo</span>
+            <img class="cat-shot" src="assets/capturas/holograma.png" alt="Holograma 3D del equipo en BlackHouse OS" loading="lazy">
+            <div class="p-6">
+                <div class="w-11 h-11 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-4 text-xl"><i class="fa-solid fa-cube"></i></div>
+                <h3 class="text-lg font-bold text-white mb-3">Holograma 3D y Video en Vivo</h3>
+                <ul class="text-sm text-gray-400 space-y-2">
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Arma un modelo 3D real del equipo, pieza por pieza, mientras lo desarmas</li>
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Base de piezas compartida entre todos los talleres que usan el sistema</li>
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Transmite la reparación EN VIVO y el cliente la ve desde su celular</li>
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Graba el proceso completo con overlays de marca, estilo streaming</li>
+                </ul>
+            </div>
         </div>
 
-        <div class="cat-card bg-bhCard border border-gray-800/60 rounded-2xl p-6">
-            <div class="w-11 h-11 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-4 text-xl"><i class="fa-solid fa-boxes-stacked"></i></div>
-            <h3 class="text-lg font-bold text-white mb-3">Inventario Blindado</h3>
-            <ul class="text-sm text-gray-400 space-y-2">
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>SKU automático por categoría y comparación de costo multiproveedor</li>
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Sube una foto de tu factura y la IA carga todos los productos sola</li>
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Importa Excel masivo con emparejamiento inteligente por modelo</li>
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Etiquetas con código de barras y exportación completa a Excel</li>
-            </ul>
+        <div class="cat-card bg-bhCard border border-gray-800/60 rounded-2xl">
+            <img class="cat-shot" src="assets/capturas/inventario.png" alt="Inventario de BlackHouse OS" loading="lazy">
+            <div class="p-6">
+                <div class="w-11 h-11 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-4 text-xl"><i class="fa-solid fa-boxes-stacked"></i></div>
+                <h3 class="text-lg font-bold text-white mb-3">Inventario Blindado</h3>
+                <ul class="text-sm text-gray-400 space-y-2">
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>SKU automático por categoría y comparación de costo multiproveedor</li>
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Sube una foto de tu factura y la IA carga todos los productos sola</li>
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Importa Excel masivo con emparejamiento inteligente por modelo</li>
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Etiquetas con código de barras y exportación completa a Excel</li>
+                </ul>
+            </div>
         </div>
 
-        <div class="cat-card bg-bhCard border border-gray-800/60 rounded-2xl p-6">
-            <div class="w-11 h-11 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-4 text-xl"><i class="fa-solid fa-cash-register"></i></div>
-            <h3 class="text-lg font-bold text-white mb-3">Ventas, POS y Caja</h3>
-            <ul class="text-sm text-gray-400 space-y-2">
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Punto de venta rápido para vender accesorios sin abrir una orden</li>
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Tu vendedora vende desde su propio celular, con boleta por WhatsApp</li>
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Cierre de caja unificado y comisión automática por técnico</li>
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Cotizaciones y certificados de garantía en PDF listos para enviar</li>
-            </ul>
+        <div class="cat-card bg-bhCard border border-gray-800/60 rounded-2xl">
+            <img class="cat-shot" src="assets/capturas/ventas.png" alt="Punto de venta de BlackHouse OS" loading="lazy">
+            <div class="p-6">
+                <div class="w-11 h-11 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-4 text-xl"><i class="fa-solid fa-cash-register"></i></div>
+                <h3 class="text-lg font-bold text-white mb-3">Ventas, POS y Caja</h3>
+                <ul class="text-sm text-gray-400 space-y-2">
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Punto de venta rápido para vender accesorios sin abrir una orden</li>
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Tu vendedora vende desde su propio celular, con boleta por WhatsApp</li>
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Cierre de caja unificado y comisión automática por técnico</li>
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Cotizaciones y certificados de garantía en PDF listos para enviar</li>
+                </ul>
+            </div>
         </div>
 
-        <div class="cat-card bg-bhCard border border-bhGreen/30 rounded-2xl p-6 relative overflow-hidden">
-            <span class="absolute top-3 right-3 text-[9px] font-black uppercase tracking-widest bg-bhGreen text-black px-2 py-1 rounded-full">Único en el mercado</span>
-            <div class="w-11 h-11 bg-bhGreen/10 text-bhGreen rounded-xl flex items-center justify-center mb-4 text-xl"><i class="fa-solid fa-qrcode"></i></div>
-            <h3 class="text-lg font-bold text-white mb-3">Portal de Rastreo para tus Clientes</h3>
-            <ul class="text-sm text-gray-400 space-y-2">
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Tu cliente escanea un QR y ve el estado de su equipo en tiempo real</li>
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Reduce hasta 70% las llamadas preguntando "¿ya está listo?"</li>
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Tienda de accesorios integrada: vende mientras el cliente espera</li>
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Datos protegidos con un código único, nadie ve lo que no le corresponde</li>
-            </ul>
+        <div class="cat-card bg-bhCard border border-bhGreen/30 rounded-2xl relative">
+            <span class="absolute top-3 right-3 z-10 text-[9px] font-black uppercase tracking-widest bg-bhGreen text-black px-2 py-1 rounded-full">Único en el mercado</span>
+            <img class="cat-shot-phone" src="assets/capturas/rastreo-cliente.png" alt="Portal de rastreo del cliente de BlackHouse OS" loading="lazy">
+            <div class="p-6">
+                <div class="w-11 h-11 bg-bhGreen/10 text-bhGreen rounded-xl flex items-center justify-center mb-4 text-xl"><i class="fa-solid fa-qrcode"></i></div>
+                <h3 class="text-lg font-bold text-white mb-3">Portal de Rastreo para tus Clientes</h3>
+                <ul class="text-sm text-gray-400 space-y-2">
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Tu cliente escanea un QR y ve el estado de su equipo en tiempo real</li>
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Reduce hasta 70% las llamadas preguntando "¿ya está listo?"</li>
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Tienda de accesorios integrada: vende mientras el cliente espera</li>
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Datos protegidos con un código único, nadie ve lo que no le corresponde</li>
+                </ul>
+            </div>
         </div>
 
-        <div class="cat-card bg-bhCard border border-gray-800/60 rounded-2xl p-6">
-            <div class="w-11 h-11 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-4 text-xl"><i class="fa-solid fa-robot"></i></div>
-            <h3 class="text-lg font-bold text-white mb-3">J.P., tu Asistente con Personalidad</h3>
-            <ul class="text-sm text-gray-400 space-y-2">
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Vigila tu negocio y avisa solo de equipos atascados o sin adelanto</li>
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Responde preguntas sobre cualquier parte del sistema, con voz</li>
-                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Celebra tus logros y capacita a personal nuevo con tutoriales guiados</li>
-            </ul>
+        <div class="cat-card bg-bhCard border border-gray-800/60 rounded-2xl">
+            <img class="cat-shot" src="assets/capturas/jp-asistente.png" alt="J.P., el asistente animado de BlackHouse OS" loading="lazy">
+            <div class="p-6">
+                <div class="w-11 h-11 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-4 text-xl"><i class="fa-solid fa-robot"></i></div>
+                <h3 class="text-lg font-bold text-white mb-3">J.P., tu Asistente con Personalidad</h3>
+                <ul class="text-sm text-gray-400 space-y-2">
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Vigila tu negocio y avisa solo de equipos atascados o sin adelanto</li>
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Responde preguntas sobre cualquier parte del sistema, con voz</li>
+                    <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Celebra tus logros y capacita a personal nuevo con tutoriales guiados</li>
+                </ul>
+            </div>
         </div>
 
         <div class="cat-card bg-bhCard border border-gray-800/60 rounded-2xl p-6">
