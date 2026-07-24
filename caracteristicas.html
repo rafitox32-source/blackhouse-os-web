@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>BlackHouse OS | Todas las funciones del sistema</title>
+    <meta name="description" content="Conoce todo lo que BlackHouse OS puede hacer por tu taller de reparación: recepción con IA, holograma 3D, rastreo para tus clientes, punto de venta y mucho más.">
+    <meta name="theme-color" content="#0b0b0c">
+    <link rel="icon" href="/icon-512.png">
+    <link rel="apple-touch-icon" href="/icon-512.png">
+
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="BlackHouse OS | Todas las funciones del sistema">
+    <meta property="og:description" content="El sistema definitivo para servicios técnicos: recepción con IA, holograma 3D, rastreo en vivo para tus clientes, punto de venta y mucho más.">
+    <meta property="og:image" content="https://blackhouse-os-web.vercel.app/icon-512.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        bhDark: '#0b0b0c',
+                        bhCard: '#121214',
+                        bhPurple: '#7c3aed',
+                        bhPurpleHover: '#6d28d9',
+                        bhGreen: '#10b981'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes floatOrb { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+        .orb { animation: floatOrb 7s ease-in-out infinite; }
+        .cat-card { transition: transform 0.2s ease, border-color 0.2s ease; }
+        .cat-card:hover { transform: translateY(-3px); }
+    </style>
+</head>
+<body class="bg-bhDark text-gray-100 font-sans antialiased selection:bg-bhPurple selection:text-white">
+
+    <!-- Fondo ambiental -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+        <div class="orb absolute -top-24 -left-20 w-72 h-72 bg-bhPurple/20 rounded-full blur-[90px]"></div>
+        <div class="orb absolute top-1/3 -right-24 w-80 h-80 bg-bhGreen/10 rounded-full blur-[100px]" style="animation-delay:-3s;"></div>
+        <div class="orb absolute bottom-0 left-1/4 w-64 h-64 bg-bhPurple/10 rounded-full blur-[90px]" style="animation-delay:-5s;"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="pt-8 pb-6 px-6 text-center">
+        <div class="text-2xl font-black tracking-wider text-white">BlackHouse<span class="text-bhPurple">OS</span></div>
+        <p class="text-xs text-gray-500 mt-1 uppercase tracking-widest font-bold">Todas las funciones del sistema</p>
+    </header>
+
+    <!-- Hero -->
+    <section class="px-6 max-w-2xl mx-auto text-center mb-10">
+        <h1 class="text-2xl sm:text-3xl font-black text-white leading-tight mb-3">
+            El sistema definitivo para <span class="bg-clip-text text-transparent bg-gradient-to-r from-bhPurple to-indigo-400">servicios técnicos</span>
+        </h1>
+        <p class="text-gray-400 text-sm sm:text-base">
+            Recepción, taller, laboratorio, inventario, ventas y un portal para que tus clientes vean su reparación en vivo — todo en un solo sistema.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-3 justify-center mt-6">
+            <a href="https://api.whatsapp.com/send?phone=51924171629&text=Hola%2C%20vi%20las%20funciones%20de%20BlackHouse%20OS%20y%20quiero%20una%20demo"
+               target="_blank" rel="noopener"
+               class="bg-bhGreen text-black font-extrabold px-6 py-3 rounded-xl hover:opacity-90 transition flex items-center justify-center gap-2 text-sm">
+                <i class="fa-brands fa-whatsapp text-lg"></i> Quiero una demo
+            </a>
+            <a href="/" class="border border-gray-700 hover:border-gray-500 text-white font-bold px-6 py-3 rounded-xl transition flex items-center justify-center gap-2 text-sm">
+                Ver planes y precios <i class="fa-solid fa-arrow-right"></i>
+            </a>
+        </div>
+    </section>
+
+    <!-- Categorías -->
+    <main class="px-4 max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4 pb-16">
+
+        <div class="cat-card bg-bhCard border border-gray-800/60 rounded-2xl p-6">
+            <div class="w-11 h-11 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-4 text-xl"><i class="fa-solid fa-clipboard-list"></i></div>
+            <h3 class="text-lg font-bold text-white mb-3">Recepción con IA</h3>
+            <ul class="text-sm text-gray-400 space-y-2">
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>La IA traduce lo que dice el cliente en un pre-diagnóstico técnico al instante</li>
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Escaneo de IMEI por cámara, foto de evidencia y firma digital del cliente</li>
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Reconoce clientes recurrentes y sugiere stock compatible al instante</li>
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Ticket con QR de rastreo para que el cliente vea el avance sin llamar</li>
+            </ul>
+        </div>
+
+        <div class="cat-card bg-bhCard border border-gray-800/60 rounded-2xl p-6">
+            <div class="w-11 h-11 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-4 text-xl"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+            <h3 class="text-lg font-bold text-white mb-3">Taller y Control de Trabajo</h3>
+            <ul class="text-sm text-gray-400 space-y-2">
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Tablero Kanban: mira de un vistazo dónde está atascado cada equipo</li>
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Los repuestos usados descuentan stock solos, cero fugas silenciosas</li>
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Cobra trabajo extra o repuestos externos sobre una orden ya abierta</li>
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Devoluciones de clientes con reintegro automático de stock</li>
+            </ul>
+        </div>
+
+        <div class="cat-card bg-bhCard border border-gray-800/60 rounded-2xl p-6">
+            <div class="w-11 h-11 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-4 text-xl"><i class="fa-solid fa-flask"></i></div>
+            <h3 class="text-lg font-bold text-white mb-3">Laboratorio con IA</h3>
+            <ul class="text-sm text-gray-400 space-y-2">
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Copiloto de microsoldadura: sugiere líneas a medir e ICs sospechosos</li>
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Calculadora de Ley de Ohm y repositorio de firmware integrados</li>
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Software "Ambición" de utilidades, lanzado con un clic desde la app</li>
+            </ul>
+        </div>
+
+        <div class="cat-card bg-bhCard border border-bhPurple/30 rounded-2xl p-6 relative overflow-hidden">
+            <span class="absolute top-3 right-3 text-[9px] font-black uppercase tracking-widest bg-bhPurple text-white px-2 py-1 rounded-full">Exclusivo</span>
+            <div class="w-11 h-11 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-4 text-xl"><i class="fa-solid fa-cube"></i></div>
+            <h3 class="text-lg font-bold text-white mb-3">Holograma 3D y Video en Vivo</h3>
+            <ul class="text-sm text-gray-400 space-y-2">
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Arma un modelo 3D real del equipo, pieza por pieza, mientras lo desarmas</li>
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Base de piezas compartida entre todos los talleres que usan el sistema</li>
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Transmite la reparación EN VIVO y el cliente la ve desde su celular</li>
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Graba el proceso completo con overlays de marca, estilo streaming</li>
+            </ul>
+        </div>
+
+        <div class="cat-card bg-bhCard border border-gray-800/60 rounded-2xl p-6">
+            <div class="w-11 h-11 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-4 text-xl"><i class="fa-solid fa-boxes-stacked"></i></div>
+            <h3 class="text-lg font-bold text-white mb-3">Inventario Blindado</h3>
+            <ul class="text-sm text-gray-400 space-y-2">
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>SKU automático por categoría y comparación de costo multiproveedor</li>
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Sube una foto de tu factura y la IA carga todos los productos sola</li>
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Importa Excel masivo con emparejamiento inteligente por modelo</li>
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Etiquetas con código de barras y exportación completa a Excel</li>
+            </ul>
+        </div>
+
+        <div class="cat-card bg-bhCard border border-gray-800/60 rounded-2xl p-6">
+            <div class="w-11 h-11 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-4 text-xl"><i class="fa-solid fa-cash-register"></i></div>
+            <h3 class="text-lg font-bold text-white mb-3">Ventas, POS y Caja</h3>
+            <ul class="text-sm text-gray-400 space-y-2">
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Punto de venta rápido para vender accesorios sin abrir una orden</li>
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Tu vendedora vende desde su propio celular, con boleta por WhatsApp</li>
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Cierre de caja unificado y comisión automática por técnico</li>
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Cotizaciones y certificados de garantía en PDF listos para enviar</li>
+            </ul>
+        </div>
+
+        <div class="cat-card bg-bhCard border border-bhGreen/30 rounded-2xl p-6 relative overflow-hidden">
+            <span class="absolute top-3 right-3 text-[9px] font-black uppercase tracking-widest bg-bhGreen text-black px-2 py-1 rounded-full">Único en el mercado</span>
+            <div class="w-11 h-11 bg-bhGreen/10 text-bhGreen rounded-xl flex items-center justify-center mb-4 text-xl"><i class="fa-solid fa-qrcode"></i></div>
+            <h3 class="text-lg font-bold text-white mb-3">Portal de Rastreo para tus Clientes</h3>
+            <ul class="text-sm text-gray-400 space-y-2">
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Tu cliente escanea un QR y ve el estado de su equipo en tiempo real</li>
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Reduce hasta 70% las llamadas preguntando "¿ya está listo?"</li>
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Tienda de accesorios integrada: vende mientras el cliente espera</li>
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Datos protegidos con un código único, nadie ve lo que no le corresponde</li>
+            </ul>
+        </div>
+
+        <div class="cat-card bg-bhCard border border-gray-800/60 rounded-2xl p-6">
+            <div class="w-11 h-11 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-4 text-xl"><i class="fa-solid fa-robot"></i></div>
+            <h3 class="text-lg font-bold text-white mb-3">J.P., tu Asistente con Personalidad</h3>
+            <ul class="text-sm text-gray-400 space-y-2">
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Vigila tu negocio y avisa solo de equipos atascados o sin adelanto</li>
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Responde preguntas sobre cualquier parte del sistema, con voz</li>
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Celebra tus logros y capacita a personal nuevo con tutoriales guiados</li>
+            </ul>
+        </div>
+
+        <div class="cat-card bg-bhCard border border-gray-800/60 rounded-2xl p-6">
+            <div class="w-11 h-11 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-4 text-xl"><i class="fa-solid fa-mobile-screen-button"></i></div>
+            <h3 class="text-lg font-bold text-white mb-3">Panel Web y App Móvil</h3>
+            <ul class="text-sm text-gray-400 space-y-2">
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Supervisa ventas, asistencia y caja desde tu celular, estés donde estés</li>
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Vendedor y técnico tienen su propia app móvil, sin instalar nada complicado</li>
+            </ul>
+        </div>
+
+        <div class="cat-card bg-bhCard border border-gray-800/60 rounded-2xl p-6">
+            <div class="w-11 h-11 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-4 text-xl"><i class="fa-solid fa-shield-halved"></i></div>
+            <h3 class="text-lg font-bold text-white mb-3">Seguridad de Nivel Empresarial</h3>
+            <ul class="text-sm text-gray-400 space-y-2">
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Tus vendedores nunca ven costos ni márgenes de ganancia</li>
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Aislamiento total de datos si manejas más de una empresa</li>
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Cada rol ve exactamente lo que le corresponde, nada más</li>
+            </ul>
+        </div>
+
+        <div class="cat-card bg-bhCard border border-gray-800/60 rounded-2xl p-6">
+            <div class="w-11 h-11 bg-bhPurple/10 text-bhPurple rounded-xl flex items-center justify-center mb-4 text-xl"><i class="fa-solid fa-palette"></i></div>
+            <h3 class="text-lg font-bold text-white mb-3">Tu Marca, en Todo el Sistema</h3>
+            <ul class="text-sm text-gray-400 space-y-2">
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>4 temas visuales, o los colores exactos de tu marca</li>
+                <li><i class="fa-solid fa-check text-bhGreen mr-2"></i>Tu logo, mensaje y datos en cada comprobante impreso</li>
+            </ul>
+        </div>
+
+    </main>
+
+    <!-- CTA final -->
+    <section class="px-6 pb-16 max-w-xl mx-auto text-center">
+        <div class="bg-gradient-to-br from-bhPurple/15 to-transparent border border-bhPurple/30 rounded-2xl p-8">
+            <h2 class="text-xl font-black text-white mb-2">¿Listo para digitalizar tu taller?</h2>
+            <p class="text-gray-400 text-sm mb-5">Un asesor te muestra el sistema completo funcionando, en vivo, con tus propios datos de prueba.</p>
+            <a href="https://api.whatsapp.com/send?phone=51924171629&text=Hola%2C%20vi%20las%20funciones%20de%20BlackHouse%20OS%20y%20quiero%20una%20demo"
+               target="_blank" rel="noopener"
+               class="inline-flex items-center gap-2 bg-bhGreen text-black font-extrabold px-8 py-4 rounded-xl hover:opacity-90 transition text-base">
+                <i class="fa-brands fa-whatsapp text-xl"></i> Solicitar demo gratis
+            </a>
+        </div>
+        <p class="text-gray-600 text-xs mt-6">&copy; 2026 BlackHouse OS. <a href="/" class="underline hover:text-gray-400">Volver al inicio</a></p>
+    </section>
+
+</body>
+</html>
