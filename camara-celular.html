@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Cámara del Celular | BlackHouse OS</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" href="/icon-512.png">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; }
+        html, body {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            background: #000;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            overflow: hidden;
+        }
+        #preview {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #000;
+        }
+        .capa {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 16px;
+            padding-top: calc(16px + env(safe-area-inset-top));
+            padding-bottom: calc(16px + env(safe-area-inset-bottom));
+            pointer-events: none;
+        }
+        .estado {
+            align-self: center;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(6px);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            padding: 12px 20px;
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-align: center;
+        }
+        .estado.conectado { color: #10b981; }
+        .estado.error { color: #f87171; }
+        .punto {
+            width: 9px; height: 9px;
+            border-radius: 50%;
+            background: #f59e0b;
+            animation: parpadeo 1s infinite;
+        }
+        .punto.ok { background: #10b981; animation: none; }
+        @keyframes parpadeo { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .botonera {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            pointer-events: all;
+        }
+        .btn-flip {
+            background: rgba(255,255,255,0.14);
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(255,255,255,0.25);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            padding: 12px 22px;
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .marca {
+            position: fixed;
+            top: calc(16px + env(safe-area-inset-top));
+            left: 16px;
+            color: rgba(255,255,255,0.5);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+        }
+        .marca span { color: #7c3aed; }
+    </style>
+</head>
+<body>
+    <video id="preview" autoplay muted playsinline webkit-playsinline></video>
+    <div class="marca">BlackHouse<span>OS</span></div>
+    <div class="capa">
+        <div id="estado" class="estado"><span class="punto"></span> Iniciando cámara...</div>
+        <div class="botonera">
+            <button class="btn-flip" onclick="voltearCamara()">🔄 Cambiar cámara</button>
+        </div>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const room = params.get('room');
+        const preview = document.getElementById('preview');
+        const estadoEl = document.getElementById('estado');
+
+        let supabaseClient, canal, pc, streamActual;
+        let usandoTrasera = true;
+
+        function setEstado(html, clase) {
+            estadoEl.className = 'estado' + (clase ? ' ' + clase : '');
+            estadoEl.innerHTML = html;
+        }
+
+        async function initSupabase() {
+            if (supabaseClient) return supabaseClient;
+            const res = await fetch('/api/config');
+            const config = await res.json();
+            supabaseClient = supabase.createClient(config.url, config.key);
+            return supabaseClient;
+        }
+
+        async function abrirCamara(trasera) {
+            if (streamActual) streamActual.getTracks().forEach(t => t.stop());
+            streamActual = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: trasera ? { ideal: 'environment' } : { ideal: 'user' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+                audio: false
+            });
+            preview.srcObject = streamActual;
+            return streamActual;
+        }
+
+        async function voltearCamara() {
+            usandoTrasera = !usandoTrasera;
+            try {
+                const nuevoStream = await abrirCamara(usandoTrasera);
+                if (pc) {
+                    const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
+                    if (sender) await sender.replaceTrack(nuevoStream.getVideoTracks()[0]);
+                }
+            } catch (e) {
+                setEstado('⚠️ No se pudo cambiar de cámara', 'error');
+            }
+        }
+
+        async function iniciar() {
+            if (!room) {
+                setEstado('⚠️ Link inválido: falta el código de la sala.', 'error');
+                return;
+            }
+
+            try {
+                await abrirCamara(usandoTrasera);
+            } catch (e) {
+                setEstado('⚠️ No se pudo acceder a la cámara: ' + e.message, 'error');
+                return;
+            }
+
+            setEstado('<span class="punto"></span> Conectando con la computadora...');
+
+            const client = await initSupabase();
+            const roomName = 'celular_camara_' + room;
+            canal = client.channel(roomName);
+
+            pc = new RTCPeerConnection({
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' }
+                ]
+            });
+            streamActual.getTracks().forEach(track => pc.addTrack(track, streamActual));
+
+            pc.onicecandidate = (event) => {
+                if (event.candidate) {
+                    canal.send({ type: 'broadcast', event: 'ice-candidate-celular', payload: { candidate: event.candidate } });
+                }
+            };
+
+            pc.onconnectionstatechange = () => {
+                if (pc.connectionState === 'connected') {
+                    setEstado('<span class="punto ok"></span> Conectado — la PC ya ve tu cámara', 'conectado');
+                } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+                    setEstado('⚠️ Se perdió la conexión con la PC', 'error');
+                }
+            };
+
+            let respondido = false;
+            let intentoOferta = null;
+
+            canal
+                .on('broadcast', { event: 'answer' }, async (payload) => {
+                    respondido = true;
+                    if (intentoOferta) { clearInterval(intentoOferta); intentoOferta = null; }
+                    try {
+                        await pc.setRemoteDescription(new RTCSessionDescription(payload.payload.answer));
+                    } catch (e) { console.error(e); }
+                })
+                .on('broadcast', { event: 'ice-candidate-pc' }, async (payload) => {
+                    if (payload.payload.candidate) {
+                        try { await pc.addIceCandidate(new RTCIceCandidate(payload.payload.candidate)); }
+                        catch (e) { console.error(e); }
+                    }
+                })
+                .subscribe(async (status) => {
+                    if (status !== 'SUBSCRIBED') return;
+
+                    const offer = await pc.createOffer();
+                    await pc.setLocalDescription(offer);
+                    setEstado('<span class="punto"></span> Esperando respuesta de la PC...');
+
+                    // La PC puede tardar un instante en terminar de suscribirse a este
+                    // mismo canal; si la oferta se manda justo antes, se pierde (los
+                    // mensajes "broadcast" no quedan guardados para quien se suscribe
+                    // despues). Para no depender de esa carrera de tiempos, se reintenta
+                    // mandar la oferta cada 1.5s hasta recibir respuesta (maximo ~15s).
+                    let intentos = 0;
+                    const enviarOferta = async () => {
+                        if (respondido) return;
+                        intentos++;
+                        await canal.send({ type: 'broadcast', event: 'offer', payload: { offer } });
+                        if (intentos >= 10 && intentoOferta) { clearInterval(intentoOferta); intentoOferta = null; }
+                    };
+                    await enviarOferta();
+                    intentoOferta = setInterval(enviarOferta, 1500);
+                });
+        }
+
+        iniciar();
+
+        // Evita que la pantalla se apague sola mientras esta pantalla esta abierta
+        // (si el navegador lo soporta); no es critico si falla.
+        if ('wakeLock' in navigator) {
+            navigator.wakeLock.request('screen').catch(() => {});
+        }
+    </script>
+</body>
+</html>
