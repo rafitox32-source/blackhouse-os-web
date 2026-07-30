@@ -62,6 +62,7 @@
         .botonera {
             display: flex;
             justify-content: center;
+            flex-wrap: wrap;
             gap: 12px;
             pointer-events: all;
         }
@@ -77,6 +78,26 @@
             display: flex;
             align-items: center;
             gap: 8px;
+        }
+        .btn-flip.activo {
+            background: rgba(245,158,11,0.35);
+            border-color: rgba(245,158,11,0.6);
+        }
+        .zoom-wrap {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.14);
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 999px;
+            padding: 8px 16px;
+            pointer-events: all;
+            color: #fff;
+            font-size: 13px;
+        }
+        .zoom-wrap input[type="range"] {
+            width: 110px;
         }
         .marca {
             position: fixed;
@@ -97,6 +118,15 @@
         <div id="estado" class="estado"><span class="punto"></span> Iniciando cámara...</div>
         <div class="botonera">
             <button class="btn-flip" onclick="voltearCamara()">🔄 Cambiar cámara</button>
+            <button class="btn-flip" id="btn-torch" onclick="alternarTorch()" style="display:none;">🔦 Flash</button>
+            <div class="zoom-wrap" id="zoom-wrap">
+                🔍 <input type="range" id="zoom-slider" min="1" max="5" step="0.1" value="1" oninput="cambiarZoom(this.value)">
+            </div>
+        </div>
+        <div class="botonera" style="margin-top:10px;">
+            <button class="btn-flip" id="btn-foto-imei" onclick="tomarFotoImei()" style="background:rgba(124,58,237,0.35); border-color:rgba(124,58,237,0.6);">
+                📸 Foto para IMEI (alta calidad)
+            </button>
         </div>
     </div>
 
@@ -108,6 +138,7 @@
 
         let supabaseClient, canal, pc, streamActual;
         let usandoTrasera = true;
+        let torchActivo = false;
 
         function setEstado(html, clase) {
             estadoEl.className = 'estado' + (clase ? ' ' + clase : '');
@@ -125,11 +156,155 @@
         async function abrirCamara(trasera) {
             if (streamActual) streamActual.getTracks().forEach(t => t.stop());
             streamActual = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: trasera ? { ideal: 'environment' } : { ideal: 'user' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+                video: { facingMode: trasera ? { ideal: 'environment' } : { ideal: 'user' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
                 audio: false
             });
             preview.srcObject = streamActual;
+            actualizarControlesCamara();
+            aplicarCalidadEnvioVideo();
             return streamActual;
+        }
+
+        // Sin esto, WebRTC baja la resolución/bitrate solo si cree que la red está floja —
+        // incluso en la misma red WiFi — y la imagen que llega a la PC se ve mucho peor que
+        // la que se ve en la pantalla del celular. "maintain-resolution" le dice que prefiera
+        // bajar cuadros por segundo antes que nitidez, que es justo lo que hace falta para leer
+        // bien un código de barras o un IMEI (no hace falta que se mueva fluido, sí que se lea).
+        async function aplicarCalidadEnvioVideo() {
+            if (!pc) return;
+            const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
+            if (!sender) return;
+            try {
+                const params = sender.getParameters();
+                if (!params.encodings || !params.encodings.length) params.encodings = [{}];
+                params.encodings[0].maxBitrate = 4_000_000;
+                params.degradationPreference = 'maintain-resolution';
+                await sender.setParameters(params);
+            } catch (e) {
+                console.warn('No se pudo fijar la calidad de envío del video:', e);
+            }
+        }
+
+        // El flash y el zoom (si el celular los soporta) ayudan mucho a que la camara
+        // enfoque bien codigos de barras/texto chico e impreso en cajas oscuras o borrosas.
+        function actualizarControlesCamara() {
+            torchActivo = false;
+            const btnTorch = document.getElementById('btn-torch');
+            const zoomWrap = document.getElementById('zoom-wrap');
+            btnTorch.textContent = '🔦 Flash';
+            btnTorch.classList.remove('activo');
+            btnTorch.style.display = 'none';
+            zoomWrap.style.display = 'none';
+
+            const track = streamActual && streamActual.getVideoTracks()[0];
+            if (!track || !track.getCapabilities) return;
+            const capacidades = track.getCapabilities();
+
+            if (capacidades.torch) btnTorch.style.display = 'flex';
+
+            if (capacidades.zoom) {
+                const slider = document.getElementById('zoom-slider');
+                slider.min = capacidades.zoom.min;
+                slider.max = capacidades.zoom.max;
+                slider.step = capacidades.zoom.step || 0.1;
+                slider.value = capacidades.zoom.min;
+                zoomWrap.style.display = 'flex';
+            }
+        }
+
+        async function alternarTorch() {
+            const track = streamActual && streamActual.getVideoTracks()[0];
+            if (!track) return;
+            torchActivo = !torchActivo;
+            try {
+                await track.applyConstraints({ advanced: [{ torch: torchActivo }] });
+                const btn = document.getElementById('btn-torch');
+                btn.textContent = torchActivo ? '🔦 Apagar flash' : '🔦 Flash';
+                btn.classList.toggle('activo', torchActivo);
+            } catch (e) {
+                torchActivo = false;
+                console.error('No se pudo controlar el flash:', e);
+            }
+        }
+
+        async function cambiarZoom(valor) {
+            const track = streamActual && streamActual.getVideoTracks()[0];
+            if (!track) return;
+            try {
+                await track.applyConstraints({ advanced: [{ zoom: parseFloat(valor) }] });
+            } catch (e) {
+                console.error('No se pudo aplicar el zoom:', e);
+            }
+        }
+
+        // El video en vivo va comprimido para verse fluido, no para leer texto/códigos chicos
+        // (en iPhone, Safari limita más la resolución de un video de WebRTC que Chrome/Android).
+        // Esto en cambio toma una FOTO FIJA con la cámara a su calidad real y la manda por el
+        // mismo canal de Supabase Realtime que ya existe para el emparejamiento — en trozos,
+        // porque una foto en base64 no entra en un solo mensaje.
+        let capturandoFotoImei = false;
+        async function tomarFotoImei() {
+            if (capturandoFotoImei || !streamActual || !canal) return;
+            capturandoFotoImei = true;
+            const btn = document.getElementById('btn-foto-imei');
+            const textoOriginal = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = '📸 Enviando...';
+            try {
+                const track = streamActual.getVideoTracks()[0];
+                let bitmap;
+                if ('ImageCapture' in window) {
+                    const captura = new ImageCapture(track);
+                    try {
+                        const blob = await captura.takePhoto();
+                        bitmap = await createImageBitmap(blob);
+                    } catch (e) {
+                        bitmap = await captura.grabFrame();
+                    }
+                } else {
+                    bitmap = await createImageBitmap(preview);
+                }
+
+                const maxLado = 2000;
+                const escala = Math.min(1, maxLado / Math.max(bitmap.width, bitmap.height));
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.round(bitmap.width * escala);
+                canvas.height = Math.round(bitmap.height * escala);
+                canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+                const blobFinal = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.82));
+
+                const base64 = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result.split(',')[1]);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blobFinal);
+                });
+
+                const TAMANO_TROZO = 48000;
+                const total = Math.ceil(base64.length / TAMANO_TROZO);
+                const id = Date.now().toString(36);
+
+                await canal.send({ type: 'broadcast', event: 'foto-imei-inicio', payload: { id, total } });
+                for (let i = 0; i < total; i++) {
+                    const trozo = base64.slice(i * TAMANO_TROZO, (i + 1) * TAMANO_TROZO);
+                    await canal.send({ type: 'broadcast', event: 'foto-imei-trozo', payload: { id, indice: i, datos: trozo } });
+                }
+                await canal.send({ type: 'broadcast', event: 'foto-imei-fin', payload: { id } });
+
+                setEstado('<span class="punto ok"></span> Foto enviada — revisa la PC', 'conectado');
+                setTimeout(() => {
+                    if (pc && pc.connectionState === 'connected') {
+                        setEstado('<span class="punto ok"></span> Conectado — la PC ya ve tu cámara', 'conectado');
+                    }
+                }, 2500);
+            } catch (e) {
+                console.error('Error tomando/enviando la foto:', e);
+                setEstado('⚠️ No se pudo tomar/enviar la foto: ' + e.message, 'error');
+            } finally {
+                capturandoFotoImei = false;
+                btn.disabled = false;
+                btn.textContent = textoOriginal;
+            }
         }
 
         async function voltearCamara() {
@@ -171,6 +346,7 @@
                 ]
             });
             streamActual.getTracks().forEach(track => pc.addTrack(track, streamActual));
+            aplicarCalidadEnvioVideo();
 
             pc.onicecandidate = (event) => {
                 if (event.candidate) {
