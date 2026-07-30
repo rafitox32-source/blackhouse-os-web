@@ -271,7 +271,10 @@
                 canvas.width = Math.round(bitmap.width * escala);
                 canvas.height = Math.round(bitmap.height * escala);
                 canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-                const blobFinal = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.82));
+                // Calidad alta (0.92) a propósito: esta foto no se mira, se le pasa a un OCR.
+                // A 0.82 el JPEG dejaba halos alrededor de los dígitos finos del IMEI y el lector
+                // confundía 8/6/0. Pesa más y son más trozos, pero es el punto de todo el flujo.
+                const blobFinal = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.92));
 
                 const base64 = await new Promise((resolve, reject) => {
                     const reader = new FileReader();

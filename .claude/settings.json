@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "Bash(git fetch *)",
+      "Bash(git branch *)",
+      "Bash(git rev-parse *)",
+      "Bash(git ls-files *)",
+      "Bash(node --check *)",
+      "Bash(node -c *)",
+      "Bash(ls *)",
+      "Bash(find *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/BLACK HOUSE/.claude/hooks/node-check.js\"",
+            "timeout": 30,
+            "statusMessage": "node --check"
+          }
+        ]
+      }
+    ]
+  }
+}

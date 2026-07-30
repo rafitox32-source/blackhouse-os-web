@@ -1,3 +1,10 @@
 .env
 .env.local
 node_modules/
+
+# Descargas y pruebas locales que quedaron en la carpeta: no son del proyecto y
+# el .exe pesa 2.3 MB (no debe entrar al historial del repo).
+*.exe
+*.zip
+prueba de nueva web/
+567be843-5edc-4845-9a70-8f5719a4e7cf (1).jpg
