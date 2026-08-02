@@ -58,7 +58,8 @@
         <section class="bg-gradient-to-br from-bhGreen/15 to-transparent border border-bhGreen/30 rounded-2xl p-5 mb-7">
             <p class="text-bhGreen text-xs font-bold uppercase tracking-wider mb-2">Qué decir en cada taller</p>
             <p id="guion" class="text-white text-sm leading-relaxed"></p>
-            <p class="text-gray-500 text-xs mt-3">
+            <p id="cuanto-ganas" class="text-white text-sm mt-3 font-bold"></p>
+            <p class="text-gray-500 text-xs mt-2">
                 Lo importante es que al escanear te elijan a vos en la lista: así el descuento
                 le sale a él y la comisión te queda a vos.
             </p>
@@ -180,6 +181,12 @@
                   + 'te sale ' + soles(promo) + ' al año en vez de ' + soles(lista) + '.»'
                 : '«Escaneá el QR de la tarjeta y elegime a mí en la lista cuando te pregunte '
                   + 'quién te la dio.»';
+
+        // Su comisión sale del precio de LISTA, no de lo que pague el taller con descuento.
+        var porVenta = (lista && datos.repartidor.comision_pct)
+            ? Math.round(lista * Number(datos.repartidor.comision_pct)) / 100 : 0;
+        document.getElementById('cuanto-ganas').textContent = porVenta
+            ? 'Por cada taller que compre, ganás ' + soles(porVenta) + '.' : '';
         document.getElementById('n-entregas').textContent = datos.totales.entregas;
         document.getElementById('n-leads').textContent = datos.totales.leads;
         document.getElementById('n-ventas').textContent = datos.totales.ventas;

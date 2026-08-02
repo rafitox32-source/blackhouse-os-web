@@ -94,7 +94,7 @@
                            class="bg-black/40 border border-gray-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:border-bhPurple focus:outline-none">
                     <input id="n-zona" type="text" maxlength="80" placeholder="Zona"
                            class="bg-black/40 border border-gray-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:border-bhPurple focus:outline-none">
-                    <input id="n-pct" type="number" min="0" max="100" step="0.5" value="10" placeholder="% comisión"
+                    <input id="n-pct" type="number" min="0" max="100" step="0.5" value="30" placeholder="% comisión (sobre el precio de lista)"
                            class="bg-black/40 border border-gray-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:border-bhPurple focus:outline-none">
                     <input id="n-desc" type="number" min="0" max="90" step="1" value="25" placeholder="% descuento al cliente"
                            class="bg-black/40 border border-gray-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:border-bhPurple focus:outline-none">
@@ -137,7 +137,9 @@
         <section>
             <h2 class="text-white font-bold text-sm uppercase tracking-wide mb-1">Licencias y comisiones</h2>
             <p class="text-gray-500 text-xs mb-3">
-                Cuando cierres una venta, poné acá quién la trajo y por cuánto se vendió. La comisión sale del % del repartidor.
+                Cuando cierres una venta, poné acá quién la trajo y por cuánto se vendió. La comisión se
+                calcula sobre el <strong>precio de lista</strong>, no sobre lo cobrado: el descuento del código
+                lo absorbe la casa, no el repartidor.
             </p>
             <div class="overflow-x-auto bg-bhCard border border-gray-800 rounded-xl">
                 <table class="w-full text-sm min-w-[820px]">
@@ -426,10 +428,13 @@
         var el = document.getElementById('cuenta-promo');
         if (!lista) { el.textContent = ''; return; }
         var cobra = Math.round(lista * (100 - desc)) / 100;
-        var comision = Math.round(cobra * com) / 100;
+        // La comisión se calcula sobre el precio de LISTA, no sobre lo que se cobra
+        // (migración 031): el descuento lo absorbe la casa, no el repartidor.
+        var comision = Math.round(lista * com) / 100;
         el.textContent = 'Con estos números: el taller paga ' + soles(cobra)
                        + ' (lista ' + soles(lista) + '), el repartidor cobra ' + soles(comision)
-                       + ' y te quedan ' + soles(cobra - comision) + '.';
+                       + ' (' + com + '% de ' + soles(lista) + ') y te quedan '
+                       + soles(cobra - comision) + '.';
     }
     document.getElementById('n-desc').addEventListener('input', actualizarCuenta);
     document.getElementById('n-pct').addEventListener('input', actualizarCuenta);
@@ -455,7 +460,7 @@
                 return;
             }
             formNuevo.reset();
-            document.getElementById('n-pct').value = 10;
+            document.getElementById('n-pct').value = 30;
             document.getElementById('n-desc').value = 25;
             formNuevo.classList.add('hidden');
             return cargar();

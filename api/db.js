@@ -543,7 +543,11 @@ module.exports = async (req, res) => {
           .from('repartidores').select('id, comision_pct').eq('id', Number(req.body.repartidor_id)).single();
         if (errRep || !rep) return res.status(404).json({ error: 'Repartidor no encontrado.' });
 
-        const comision = Math.round(monto * Number(rep.comision_pct)) / 100;
+        // La comisión sale del PRECIO DE LISTA, NO de lo que se cobró (migracion 031). El
+        // código de descuento es un beneficio para el consumidor, no un recorte para el
+        // repartidor: una venta cerrada en S/300 con el código igual paga 30% de S/400.
+        // `venta_monto` se sigue guardando porque es la plata que entró de verdad.
+        const comision = Math.round(PRECIO_LISTA_ANUAL * Number(rep.comision_pct)) / 100;
         const { error } = await supabase.from('licencias').update({
           repartidor_id: rep.id,
           venta_monto: monto,
