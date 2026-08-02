@@ -116,6 +116,20 @@ function textoLimpio(valor, maximo) {
 
 const RE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// --- PRECIO DE LISTA DE LA ANUALIDAD (migracion 030) ---
+// No hay tabla de precios en esta base: los S/400 viven en la documentacion comercial y
+// aca. Es el unico lugar del codigo donde esta el precio, y de el sale el precio
+// promocional que ve el cliente que llega con el codigo de un repartidor.
+// Si cambia el precio comercial, se cambia ACA. Con 400 y 25% de descuento -> S/300.
+const PRECIO_LISTA_ANUAL = 400;
+
+// Redondea a centimos para no arrastrar decimales largos (25% de 400 = 300 exacto, pero
+// un 33% de 400 daria 268.00000000000003 sin esto).
+function precioConDescuento(descuentoPct) {
+  const pct = Number(descuentoPct) || 0;
+  return Math.round(PRECIO_LISTA_ANUAL * (100 - pct)) / 100;
+}
+
 function tienePermiso(rol, tabla, accion) {
   if (rol === 'dueno') return true;
   const permisosTabla = PERMISOS_POR_ROL[rol] && PERMISOS_POR_ROL[rol][tabla];
@@ -311,11 +325,19 @@ module.exports = async (req, res) => {
     if (action === 'referidos_lista') {
       const { data, error } = await supabase
         .from('repartidores')
-        .select('id, nombre_publico')
+        .select('id, nombre_publico, descuento_pct')
         .eq('activo', true)
         .order('nombre_publico', { ascending: true });
       if (error) return res.status(400).json({ error: error.message });
-      return res.status(200).json({ success: true, data: data || [] });
+
+      // El precio promocional lo calcula el servidor: el navegador nunca decide cuanto
+      // paga nadie, solo lo muestra.
+      const lista = (data || []).map(r => ({
+        id: r.id,
+        nombre_publico: r.nombre_publico,
+        precio_promo: precioConDescuento(r.descuento_pct),
+      }));
+      return res.status(200).json({ success: true, data: lista, precio_lista: PRECIO_LISTA_ANUAL });
     }
 
     // --- REFERIDOS: registrar el lead y devolver el codigo para el WhatsApp (publica) ---
@@ -345,7 +367,7 @@ module.exports = async (req, res) => {
 
       const { data: rep, error: errRep } = await supabase
         .from('repartidores')
-        .select('id, codigo, nombre_publico')
+        .select('id, codigo, nombre_publico, descuento_pct')
         .eq('id', idRepartidor)
         .eq('activo', true)
         .single();
@@ -362,7 +384,13 @@ module.exports = async (req, res) => {
         return res.status(400).json({ error: errLead.message });
       }
 
-      return res.status(200).json({ success: true, codigo: rep.codigo, nombre: rep.nombre_publico });
+      return res.status(200).json({
+        success: true,
+        codigo: rep.codigo,
+        nombre: rep.nombre_publico,
+        precio_lista: PRECIO_LISTA_ANUAL,
+        precio_promo: precioConDescuento(rep.descuento_pct),
+      });
     }
 
     // --- REFERIDOS: lo del repartidor, validado con SU token uuid (link personal) ---
@@ -376,7 +404,7 @@ module.exports = async (req, res) => {
 
       const { data: rep, error: errRep } = await supabase
         .from('repartidores')
-        .select('id, nombre_publico, codigo, comision_pct, activo')
+        .select('id, nombre_publico, codigo, comision_pct, descuento_pct, activo')
         .eq('token', tokenRep)
         .single();
       if (errRep || !rep || !rep.activo) {
@@ -423,7 +451,13 @@ module.exports = async (req, res) => {
 
       return res.status(200).json({
         success: true,
-        repartidor: { nombre: rep.nombre_publico, codigo: rep.codigo, comision_pct: rep.comision_pct },
+        repartidor: {
+          nombre: rep.nombre_publico,
+          codigo: rep.codigo,
+          comision_pct: rep.comision_pct,
+          precio_lista: PRECIO_LISTA_ANUAL,
+          precio_promo: precioConDescuento(rep.descuento_pct),
+        },
         entregas: listado.data || [],
         totales: {
           entregas: totalEntregas.count || 0,
@@ -456,6 +490,11 @@ module.exports = async (req, res) => {
         if (nombre) campos.nombre = nombre;
         if (nombrePublico) campos.nombre_publico = nombrePublico;
         if (Number.isFinite(pct) && pct >= 0 && pct <= 100) campos.comision_pct = pct;
+
+        // Descuento que consigue el cliente con su codigo (migracion 030). El tope de 90
+        // lo repite la base con un CHECK: aca es para dar un error entendible antes.
+        const desc = Number(req.body.descuento_pct);
+        if (Number.isFinite(desc) && desc >= 0 && desc <= 90) campos.descuento_pct = desc;
 
         if (req.body.id) {
           // Al editar, el codigo no se toca: ya salio impreso en mensajes de WhatsApp y
@@ -536,7 +575,7 @@ module.exports = async (req, res) => {
       // referidos_panel: todo lo que necesita la pantalla, en un solo viaje.
       const [repartidores, entregas, leads, licencias] = await Promise.all([
         supabase.from('repartidores')
-          .select('id, nombre, nombre_publico, telefono, zona, codigo, token, comision_pct, activo, creado_en')
+          .select('id, nombre, nombre_publico, telefono, zona, codigo, token, comision_pct, descuento_pct, activo, creado_en')
           .order('activo', { ascending: false }).order('nombre', { ascending: true }),
         supabase.from('entregas')
           .select('id, repartidor_id, taller_nombre, distrito, direccion, contacto, telefono, creado_en')
@@ -553,7 +592,11 @@ module.exports = async (req, res) => {
 
       return res.status(200).json({
         success: true,
-        repartidores: repartidores.data || [],
+        precio_lista: PRECIO_LISTA_ANUAL,
+        repartidores: (repartidores.data || []).map(r => ({
+          ...r,
+          precio_promo: precioConDescuento(r.descuento_pct),
+        })),
         entregas: entregas.data || [],
         leads: leads.data || [],
         licencias: licencias.data || [],

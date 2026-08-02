@@ -50,11 +50,19 @@
             <p class="text-gray-500 text-xs uppercase tracking-wider mb-1">BlackHouse OS</p>
             <h1 id="saludo" class="text-2xl font-black text-white"></h1>
             <p class="text-gray-500 text-sm mt-1">
-                Tu código es
-                <span id="mi-codigo" class="text-bhPurple font-bold"></span>.
-                Decile a cada taller que cuando escanee el QR te elija a vos en la lista.
+                Tu código es <span id="mi-codigo" class="text-bhPurple font-bold"></span>.
             </p>
         </header>
+
+        <!-- Lo que tiene que decir en la puerta del taller -->
+        <section class="bg-gradient-to-br from-bhGreen/15 to-transparent border border-bhGreen/30 rounded-2xl p-5 mb-7">
+            <p class="text-bhGreen text-xs font-bold uppercase tracking-wider mb-2">Qué decir en cada taller</p>
+            <p id="guion" class="text-white text-sm leading-relaxed"></p>
+            <p class="text-gray-500 text-xs mt-3">
+                Lo importante es que al escanear te elijan a vos en la lista: así el descuento
+                le sale a él y la comisión te queda a vos.
+            </p>
+        </section>
 
         <!-- Sus números -->
         <section class="grid grid-cols-2 gap-3 mb-7">
@@ -161,6 +169,17 @@
     function pintar(datos) {
         document.getElementById('saludo').textContent = 'Hola, ' + datos.repartidor.nombre;
         document.getElementById('mi-codigo').textContent = datos.repartidor.codigo;
+
+        // El guion se arma con el precio real que manda el servidor, no con uno escrito
+        // a mano acá: si cambia la promo, cambia solo y nadie sale a ofrecer un precio viejo.
+        var lista = datos.repartidor.precio_lista;
+        var promo = datos.repartidor.precio_promo;
+        document.getElementById('guion').textContent =
+            (promo && lista && promo < lista)
+                ? '«Escaneá el QR de la tarjeta y elegime en la lista: con mi código el sistema '
+                  + 'te sale ' + soles(promo) + ' al año en vez de ' + soles(lista) + '.»'
+                : '«Escaneá el QR de la tarjeta y elegime a mí en la lista cuando te pregunte '
+                  + 'quién te la dio.»';
         document.getElementById('n-entregas').textContent = datos.totales.entregas;
         document.getElementById('n-leads').textContent = datos.totales.leads;
         document.getElementById('n-ventas').textContent = datos.totales.ventas;

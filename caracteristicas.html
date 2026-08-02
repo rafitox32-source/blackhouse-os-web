@@ -324,8 +324,10 @@
          enlace de WhatsApp funciona como siempre. -->
     <div id="modal-referido" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
         <div class="bg-bhCard border border-gray-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl">
-            <h3 class="text-white font-black text-lg mb-1">Una cosa antes</h3>
-            <p class="text-gray-400 text-sm mb-4">¿Quién te dio la tarjeta de BlackHouse OS?</p>
+            <h3 class="text-white font-black text-lg mb-1">¿Quién te dio la tarjeta?</h3>
+            <p id="texto-promo" class="text-gray-400 text-sm mb-4">
+                Si llegaste con la tarjeta de alguien, te corresponde precio promocional.
+            </p>
 
             <div id="lista-referidos" class="space-y-1.5 max-h-60 overflow-y-auto mb-5 pr-1"></div>
 
@@ -347,6 +349,7 @@
         var enlaces = document.querySelectorAll('a[data-wa-referido]');
 
         var repartidores = [];   // se llena al cargar; si queda vacío, no se pregunta nada
+        var precioLista = 0;     // precio de lista de la anualidad, lo manda el servidor
         var enlaceActual = null;
 
         // Id aleatorio del navegador, solo para que tocar WhatsApp cinco veces sea UN lead
@@ -374,11 +377,14 @@
 
         // Le pega el código del repartidor al mensaje que ya trae el enlace, para que llegue
         // escrito en el chat. Eso es lo que sobrevive el salto a la app de WhatsApp.
-        function urlConCodigo(enlace, codigo) {
+        function urlConCodigo(enlace, codigo, precioPromo) {
             if (!codigo) return enlace.href;
             try {
                 var u = new URL(enlace.href);
-                var texto = (u.searchParams.get('text') || 'Hola') + ' (tarjeta: ' + codigo + ')';
+                // El precio va en el mensaje a propósito: deja por escrito qué le
+                // prometieron al cliente, así no hay discusión después.
+                var etiqueta = precioPromo ? codigo + ' — promo ' + soles(precioPromo) : codigo;
+                var texto = (u.searchParams.get('text') || 'Hola') + ' (tarjeta: ' + etiqueta + ')';
 
                 // Se arma a mano y NO con searchParams.toString(): ese serializa los
                 // espacios como "+", y WhatsApp los muestra literales en el mensaje
@@ -393,13 +399,29 @@
             }
         }
 
+        function soles(n) {
+            return 'S/ ' + (Number(n) || 0).toFixed(2).replace(/\.00$/, '');
+        }
+
         function pintarLista() {
+            // El precio promocional lo manda el servidor ya calculado: acá solo se muestra.
+            // Solo se pone un precio en el titular si TODOS los repartidores dan el mismo
+            // (el caso normal). Si alguno tiene otra promo, el titular queda genérico y el
+            // precio de cada uno se ve en su fila — así el titular nunca promete de más.
+            var primero = repartidores.length ? repartidores[0].precio_promo : 0;
+            var todosIgual = repartidores.every(function (r) { return r.precio_promo === primero; });
+            var promo = document.getElementById('texto-promo');
+            if (todosIgual && precioLista && primero && primero < precioLista) {
+                promo.textContent = 'Con el código de quien te la dio, la anualidad te queda en '
+                                  + soles(primero) + ' en vez de ' + soles(precioLista) + '.';
+            }
+
             var html = '';
             for (var i = 0; i < repartidores.length; i++) {
-                var r = repartidores[i];
                 html += '<label class="flex items-center gap-3 bg-black/30 hover:bg-black/50 border border-gray-800 rounded-lg px-3 py-2.5 cursor-pointer transition">'
-                      + '<input type="radio" name="bh-referido" value="' + r.id + '" class="accent-bhPurple">'
-                      + '<span class="text-sm text-gray-200"></span></label>';
+                      + '<input type="radio" name="bh-referido" value="' + repartidores[i].id + '" class="accent-bhPurple">'
+                      + '<span class="text-sm text-gray-200 flex-1"></span>'
+                      + '<span class="text-xs font-bold text-bhGreen shrink-0"></span></label>';
             }
             html += '<label class="flex items-center gap-3 bg-black/30 hover:bg-black/50 border border-gray-800 rounded-lg px-3 py-2.5 cursor-pointer transition">'
                   + '<input type="radio" name="bh-referido" value="" class="accent-bhPurple" checked>'
@@ -408,9 +430,11 @@
 
             // Los nombres se escriben con textContent, nunca concatenados en el HTML: vienen
             // de la base y no tienen por qué poder inyectar marcado en esta página.
-            var spans = lista.querySelectorAll('label span');
+            var filas = lista.querySelectorAll('label');
             for (var j = 0; j < repartidores.length; j++) {
-                spans[j].textContent = repartidores[j].nombre_publico;
+                var spans = filas[j].querySelectorAll('span');
+                spans[0].textContent = repartidores[j].nombre_publico;
+                spans[1].textContent = repartidores[j].precio_promo ? soles(repartidores[j].precio_promo) : '';
             }
         }
 
@@ -439,7 +463,7 @@
             // Perder la atribución de un lead es barato; perder al cliente no.
             pedir({ action: 'referido_lead', repartidor_id: id, visitante: visitante() })
                 .then(function (resp) {
-                    window.location.href = urlConCodigo(enlace, resp && resp.codigo);
+                    window.location.href = urlConCodigo(enlace, resp && resp.codigo, resp && resp.precio_promo);
                 })
                 .catch(function () {
                     window.location.href = enlace.href;
@@ -465,6 +489,7 @@
             .then(function (resp) {
                 if (resp && resp.success && resp.data && resp.data.length) {
                     repartidores = resp.data;
+                    precioLista = Number(resp.precio_lista) || 0;
                     pintarLista();
                 }
             })

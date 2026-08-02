@@ -96,7 +96,10 @@
                            class="bg-black/40 border border-gray-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:border-bhPurple focus:outline-none">
                     <input id="n-pct" type="number" min="0" max="100" step="0.5" value="10" placeholder="% comisión"
                            class="bg-black/40 border border-gray-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:border-bhPurple focus:outline-none">
+                    <input id="n-desc" type="number" min="0" max="90" step="1" value="25" placeholder="% descuento al cliente"
+                           class="bg-black/40 border border-gray-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:border-bhPurple focus:outline-none">
                 </div>
+                <p id="cuenta-promo" class="text-xs text-gray-400 mb-3"></p>
                 <div class="flex items-center gap-3">
                     <button type="submit" class="bg-bhGreen text-black font-extrabold px-5 py-2.5 rounded-lg text-sm hover:opacity-90 transition">Crear</button>
                     <button type="button" id="btn-cancelar" class="text-gray-500 hover:text-gray-300 text-xs">Cancelar</button>
@@ -113,6 +116,7 @@
                         <tr>
                             <th class="text-left font-medium px-4 py-3">Repartidor</th>
                             <th class="text-left font-medium px-4 py-3">Código</th>
+                            <th class="text-right font-medium px-4 py-3">Da precio</th>
                             <th class="text-right font-medium px-4 py-3">Talleres</th>
                             <th class="text-right font-medium px-4 py-3">Escaneos</th>
                             <th class="text-right font-medium px-4 py-3">Ventas</th>
@@ -241,6 +245,17 @@
             }
 
             celda(fila, r.codigo, 'font-mono text-bhPurple');
+
+            var tdPromo = celda(fila, null, 'text-right');
+            var pPromo = document.createElement('p');
+            pPromo.className = 'font-bold text-white';
+            pPromo.textContent = soles(r.precio_promo);
+            tdPromo.appendChild(pPromo);
+            var pDesc = document.createElement('p');
+            pDesc.className = 'text-xs text-gray-500';
+            pDesc.textContent = '-' + (Number(r.descuento_pct) || 0) + '%';
+            tdPromo.appendChild(pDesc);
+
             celda(fila, nEntregas, 'text-right text-gray-300');
             celda(fila, nLeads, 'text-right text-gray-300');
             celda(fila, suyas.length, 'text-right text-gray-300');
@@ -323,7 +338,16 @@
                         return cargar();
                     });
                 }
-                sel.addEventListener('change', guardar);
+                // Al elegir repartidor se completa solo el monto con SU precio promocional,
+                // que es lo que ese cliente tendría que haber pagado. Si ya había un monto
+                // escrito no se pisa: puede haber cerrado en otro número.
+                sel.addEventListener('change', function () {
+                    if (!inp.value && sel.value) {
+                        var elegido = datos.repartidores.find(function (r) { return r.id === Number(sel.value); });
+                        if (elegido && elegido.precio_promo) inp.value = elegido.precio_promo;
+                    }
+                    guardar();
+                });
                 inp.addEventListener('change', guardar);
 
                 if (lic.comision_estado === 'pendiente') {
@@ -376,6 +400,7 @@
             pintarResumen();
             pintarRepartidores();
             pintarLicencias();
+            actualizarCuenta();   // ya se sabe el precio de lista
             elCarga.classList.add('hidden');
             elError.classList.add('hidden');
             elApp.classList.remove('hidden');
@@ -392,6 +417,23 @@
         formNuevo.classList.add('hidden');
     });
 
+    // Cuenta en vivo mientras carga un repartidor: qué paga el cliente, qué se lleva él y
+    // qué queda. Es la plata real de cada venta con esos dos porcentajes.
+    function actualizarCuenta() {
+        var lista = Number(datos.precio_lista) || 0;
+        var desc = Number(document.getElementById('n-desc').value) || 0;
+        var com = Number(document.getElementById('n-pct').value) || 0;
+        var el = document.getElementById('cuenta-promo');
+        if (!lista) { el.textContent = ''; return; }
+        var cobra = Math.round(lista * (100 - desc)) / 100;
+        var comision = Math.round(cobra * com) / 100;
+        el.textContent = 'Con estos números: el taller paga ' + soles(cobra)
+                       + ' (lista ' + soles(lista) + '), el repartidor cobra ' + soles(comision)
+                       + ' y te quedan ' + soles(cobra - comision) + '.';
+    }
+    document.getElementById('n-desc').addEventListener('input', actualizarCuenta);
+    document.getElementById('n-pct').addEventListener('input', actualizarCuenta);
+
     formNuevo.addEventListener('submit', function (ev) {
         ev.preventDefault();
         var aviso = document.getElementById('aviso-nuevo');
@@ -404,7 +446,8 @@
             codigo: document.getElementById('n-codigo').value,
             telefono: document.getElementById('n-telefono').value,
             zona: document.getElementById('n-zona').value,
-            comision_pct: document.getElementById('n-pct').value
+            comision_pct: document.getElementById('n-pct').value,
+            descuento_pct: document.getElementById('n-desc').value
         }).then(function (resp) {
             if (!resp || !resp.success) {
                 aviso.textContent = (resp && resp.error) || 'No se pudo crear.';
@@ -413,6 +456,7 @@
             }
             formNuevo.reset();
             document.getElementById('n-pct').value = 10;
+            document.getElementById('n-desc').value = 25;
             formNuevo.classList.add('hidden');
             return cargar();
         });
