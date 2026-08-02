@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>BlackHouse OS | Mis entregas</title>
+    <meta name="theme-color" content="#0b0b0c">
+    <!-- Es un link personal: que no lo indexe nadie. -->
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" href="/icon-512.png">
+    <link rel="apple-touch-icon" href="/icon-512.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        bhDark: '#0b0b0c',
+                        bhCard: '#121214',
+                        bhPurple: '#7c3aed',
+                        bhPurpleHover: '#6d28d9',
+                        bhGreen: '#10b981'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-bhDark text-white min-h-screen">
+
+<div class="max-w-lg mx-auto px-4 py-6 pb-24">
+
+    <!-- Link inválido / sin token -->
+    <div id="pantalla-error" class="hidden text-center py-20">
+        <i class="fa-solid fa-link-slash text-4xl text-gray-700 mb-4"></i>
+        <h1 class="text-lg font-bold text-white mb-2">Este link no sirve</h1>
+        <p id="texto-error" class="text-gray-500 text-sm">Pedile a BlackHouse OS que te mande tu link personal.</p>
+    </div>
+
+    <div id="pantalla-carga" class="text-center py-20 text-gray-600 text-sm">
+        <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-3"></i>
+        <p>Cargando…</p>
+    </div>
+
+    <main id="pantalla-app" class="hidden">
+
+        <header class="mb-6">
+            <p class="text-gray-500 text-xs uppercase tracking-wider mb-1">BlackHouse OS</p>
+            <h1 id="saludo" class="text-2xl font-black text-white"></h1>
+            <p class="text-gray-500 text-sm mt-1">
+                Tu código es
+                <span id="mi-codigo" class="text-bhPurple font-bold"></span>.
+                Decile a cada taller que cuando escanee el QR te elija a vos en la lista.
+            </p>
+        </header>
+
+        <!-- Sus números -->
+        <section class="grid grid-cols-2 gap-3 mb-7">
+            <div class="bg-bhCard border border-gray-800 rounded-xl p-4">
+                <p class="text-gray-500 text-xs mb-1">Talleres visitados</p>
+                <p id="n-entregas" class="text-2xl font-black text-white">0</p>
+            </div>
+            <div class="bg-bhCard border border-gray-800 rounded-xl p-4">
+                <p class="text-gray-500 text-xs mb-1">Te escanearon</p>
+                <p id="n-leads" class="text-2xl font-black text-white">0</p>
+            </div>
+            <div class="bg-bhCard border border-gray-800 rounded-xl p-4">
+                <p class="text-gray-500 text-xs mb-1">Ventas tuyas</p>
+                <p id="n-ventas" class="text-2xl font-black text-bhGreen">0</p>
+            </div>
+            <div class="bg-bhCard border border-gray-800 rounded-xl p-4">
+                <p class="text-gray-500 text-xs mb-1">Te deben</p>
+                <p id="n-pendiente" class="text-2xl font-black text-bhGreen">S/ 0</p>
+            </div>
+        </section>
+
+        <!-- Registrar un taller -->
+        <section class="bg-gradient-to-br from-bhPurple/15 to-transparent border border-bhPurple/30 rounded-2xl p-5 mb-7">
+            <h2 class="text-white font-bold mb-1">Registrar una entrega</h2>
+            <p class="text-gray-400 text-xs mb-4">Anotá cada taller donde dejes tarjeta. Con el nombre alcanza; lo demás ayuda pero es opcional.</p>
+
+            <form id="form-entrega" class="space-y-3">
+                <input id="f-taller" type="text" required maxlength="120" placeholder="Nombre del taller *"
+                       class="w-full bg-black/40 border border-gray-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:border-bhPurple focus:outline-none">
+                <div class="grid grid-cols-2 gap-3">
+                    <input id="f-distrito" type="text" maxlength="80" placeholder="Distrito"
+                           class="w-full bg-black/40 border border-gray-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:border-bhPurple focus:outline-none">
+                    <input id="f-telefono" type="tel" maxlength="40" placeholder="Teléfono"
+                           class="w-full bg-black/40 border border-gray-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:border-bhPurple focus:outline-none">
+                </div>
+                <input id="f-direccion" type="text" maxlength="200" placeholder="Dirección"
+                       class="w-full bg-black/40 border border-gray-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:border-bhPurple focus:outline-none">
+                <input id="f-contacto" type="text" maxlength="120" placeholder="¿Con quién hablaste?"
+                       class="w-full bg-black/40 border border-gray-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:border-bhPurple focus:outline-none">
+                <textarea id="f-notas" maxlength="500" rows="2" placeholder="Notas (mostró interés, volver el martes…)"
+                          class="w-full bg-black/40 border border-gray-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:border-bhPurple focus:outline-none resize-none"></textarea>
+
+                <button id="btn-guardar" type="submit"
+                        class="w-full bg-bhGreen text-black font-extrabold px-5 py-3 rounded-xl hover:opacity-90 transition text-sm">
+                    Guardar entrega
+                </button>
+                <p id="aviso" class="text-center text-xs hidden"></p>
+            </form>
+        </section>
+
+        <!-- Sus entregas -->
+        <section>
+            <h2 class="text-white font-bold mb-3 text-sm uppercase tracking-wide">Tus entregas</h2>
+            <div id="listado" class="space-y-2"></div>
+            <p id="sin-entregas" class="text-gray-600 text-sm text-center py-8 hidden">Todavía no registraste ninguna.</p>
+        </section>
+
+    </main>
+</div>
+
+<script>
+(function () {
+    var token = new URLSearchParams(window.location.search).get('t') || '';
+
+    var elCarga   = document.getElementById('pantalla-carga');
+    var elError   = document.getElementById('pantalla-error');
+    var elApp     = document.getElementById('pantalla-app');
+    var elListado = document.getElementById('listado');
+    var elVacio   = document.getElementById('sin-entregas');
+    var elAviso   = document.getElementById('aviso');
+    var btn       = document.getElementById('btn-guardar');
+    var form      = document.getElementById('form-entrega');
+
+    var campos = {
+        taller_nombre: 'f-taller', distrito: 'f-distrito', telefono: 'f-telefono',
+        direccion: 'f-direccion', contacto: 'f-contacto', notas: 'f-notas'
+    };
+
+    function pedir(cuerpo) {
+        return fetch('/api/db', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(cuerpo)
+        }).then(function (r) { return r.json(); });
+    }
+
+    function mostrarError(texto) {
+        elCarga.classList.add('hidden');
+        elApp.classList.add('hidden');
+        elError.classList.remove('hidden');
+        if (texto) document.getElementById('texto-error').textContent = texto;
+    }
+
+    function soles(n) {
+        return 'S/ ' + (Number(n) || 0).toFixed(2).replace(/\.00$/, '');
+    }
+
+    function fechaCorta(iso) {
+        try {
+            return new Date(iso).toLocaleDateString('es-PE', { day: '2-digit', month: 'short' });
+        } catch (e) { return ''; }
+    }
+
+    function pintar(datos) {
+        document.getElementById('saludo').textContent = 'Hola, ' + datos.repartidor.nombre;
+        document.getElementById('mi-codigo').textContent = datos.repartidor.codigo;
+        document.getElementById('n-entregas').textContent = datos.totales.entregas;
+        document.getElementById('n-leads').textContent = datos.totales.leads;
+        document.getElementById('n-ventas').textContent = datos.totales.ventas;
+        document.getElementById('n-pendiente').textContent = soles(datos.totales.comision_pendiente);
+
+        elListado.innerHTML = '';
+        var entregas = datos.entregas || [];
+        elVacio.classList.toggle('hidden', entregas.length > 0);
+
+        for (var i = 0; i < entregas.length; i++) {
+            var e = entregas[i];
+            var fila = document.createElement('div');
+            fila.className = 'bg-bhCard border border-gray-800 rounded-xl px-4 py-3';
+
+            var arriba = document.createElement('div');
+            arriba.className = 'flex items-start justify-between gap-3';
+
+            var nombre = document.createElement('p');
+            nombre.className = 'text-sm font-bold text-white';
+            nombre.textContent = e.taller_nombre;   // textContent: lo escribió él en la calle
+
+            var fecha = document.createElement('span');
+            fecha.className = 'text-xs text-gray-600 shrink-0';
+            fecha.textContent = fechaCorta(e.creado_en);
+
+            arriba.appendChild(nombre);
+            arriba.appendChild(fecha);
+            fila.appendChild(arriba);
+
+            var detalle = [e.distrito, e.direccion, e.contacto].filter(Boolean).join(' · ');
+            if (detalle) {
+                var p = document.createElement('p');
+                p.className = 'text-xs text-gray-500 mt-0.5';
+                p.textContent = detalle;
+                fila.appendChild(p);
+            }
+            elListado.appendChild(fila);
+        }
+
+        elCarga.classList.add('hidden');
+        elApp.classList.remove('hidden');
+    }
+
+    function cargar() {
+        return pedir({ action: 'entregas_mias', token: token }).then(function (resp) {
+            if (!resp || !resp.success) {
+                mostrarError(resp && resp.error ? resp.error : null);
+                return;
+            }
+            pintar(resp);
+        }).catch(function () {
+            mostrarError('No hay conexión. Probá de nuevo en un momento.');
+        });
+    }
+
+    form.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        var cuerpo = { action: 'entrega_registrar', token: token };
+        for (var clave in campos) {
+            cuerpo[clave] = document.getElementById(campos[clave]).value;
+        }
+        if (!cuerpo.taller_nombre.trim()) return;
+
+        btn.disabled = true;
+        btn.textContent = 'Guardando…';
+        elAviso.classList.add('hidden');
+
+        pedir(cuerpo).then(function (resp) {
+            btn.disabled = false;
+            btn.textContent = 'Guardar entrega';
+            if (!resp || !resp.success) {
+                elAviso.textContent = (resp && resp.error) || 'No se pudo guardar.';
+                elAviso.className = 'text-center text-xs text-red-400';
+                return;
+            }
+            form.reset();
+            elAviso.textContent = 'Entrega guardada.';
+            elAviso.className = 'text-center text-xs text-bhGreen';
+            return cargar();
+        }).catch(function () {
+            btn.disabled = false;
+            btn.textContent = 'Guardar entrega';
+            elAviso.textContent = 'Sin conexión. No se guardó, probá de nuevo.';
+            elAviso.className = 'text-center text-xs text-red-400';
+        });
+    });
+
+    if (!token) {
+        mostrarError('Te falta el link personal. Pedíselo a BlackHouse OS.');
+    } else {
+        cargar();
+    }
+})();
+</script>
+
+</body>
+</html>

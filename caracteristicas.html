@@ -147,7 +147,7 @@
         </p>
         <div class="flex flex-col sm:flex-row gap-3 justify-center mt-6">
             <a href="https://api.whatsapp.com/send?phone=51924171629&text=Hola%2C%20vi%20las%20funciones%20de%20BlackHouse%20OS%20y%20quiero%20una%20demo"
-               target="_blank" rel="noopener"
+               target="_blank" rel="noopener" data-wa-referido
                class="bg-bhGreen text-black font-extrabold px-6 py-3 rounded-xl hover:opacity-90 transition flex items-center justify-center gap-2 text-sm">
                 <i class="fa-brands fa-whatsapp text-lg"></i> Quiero una demo
             </a>
@@ -308,13 +308,169 @@
             <h2 class="text-xl font-black text-white mb-2">¿Listo para digitalizar tu taller?</h2>
             <p class="text-gray-400 text-sm mb-5">Un asesor te muestra el sistema completo funcionando, en vivo, con tus propios datos de prueba.</p>
             <a href="https://api.whatsapp.com/send?phone=51924171629&text=Hola%2C%20vi%20las%20funciones%20de%20BlackHouse%20OS%20y%20quiero%20una%20demo"
-               target="_blank" rel="noopener"
+               target="_blank" rel="noopener" data-wa-referido
                class="inline-flex items-center gap-2 bg-bhGreen text-black font-extrabold px-8 py-4 rounded-xl hover:opacity-90 transition text-base">
                 <i class="fa-brands fa-whatsapp text-xl"></i> Solicitar demo gratis
             </a>
         </div>
         <p class="text-gray-600 text-xs mt-6">&copy; 2026 BlackHouse OS. <a href="/" class="underline hover:text-gray-400">Volver al inicio</a></p>
     </section>
+
+    <!-- ================= ¿Quién te dio la tarjeta? =================
+         Aparece pegado al botón de WhatsApp, NO al entrar a la página: el que ya decidió
+         escribir es el único al que vale la pena preguntarle, y preguntar antes espanta
+         gente que todavía está mirando el producto.
+         Si no hay repartidores cargados, o si falla la red, el modal ni aparece y el
+         enlace de WhatsApp funciona como siempre. -->
+    <div id="modal-referido" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="bg-bhCard border border-gray-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl">
+            <h3 class="text-white font-black text-lg mb-1">Una cosa antes</h3>
+            <p class="text-gray-400 text-sm mb-4">¿Quién te dio la tarjeta de BlackHouse OS?</p>
+
+            <div id="lista-referidos" class="space-y-1.5 max-h-60 overflow-y-auto mb-5 pr-1"></div>
+
+            <button id="btn-referido-ok" type="button"
+                    class="w-full bg-bhGreen text-black font-extrabold px-5 py-3 rounded-xl hover:opacity-90 transition flex items-center justify-center gap-2 text-sm">
+                <i class="fa-brands fa-whatsapp text-lg"></i> Abrir WhatsApp
+            </button>
+            <button id="btn-referido-cerrar" type="button"
+                    class="w-full text-gray-500 hover:text-gray-300 text-xs mt-3 transition">Cancelar</button>
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        var modal = document.getElementById('modal-referido');
+        var lista = document.getElementById('lista-referidos');
+        var btnOk = document.getElementById('btn-referido-ok');
+        var btnCerrar = document.getElementById('btn-referido-cerrar');
+        var enlaces = document.querySelectorAll('a[data-wa-referido]');
+
+        var repartidores = [];   // se llena al cargar; si queda vacío, no se pregunta nada
+        var enlaceActual = null;
+
+        // Id aleatorio del navegador, solo para que tocar WhatsApp cinco veces sea UN lead
+        // y no cinco. No es la IP ni identifica a nadie.
+        function visitante() {
+            try {
+                var v = localStorage.getItem('bh_visitante');
+                if (!v && window.crypto && crypto.randomUUID) {
+                    v = crypto.randomUUID();
+                    localStorage.setItem('bh_visitante', v);
+                }
+                return v;
+            } catch (e) {
+                return null; // navegación privada / storage bloqueado: seguimos sin id
+            }
+        }
+
+        function pedir(cuerpo) {
+            return fetch('/api/db', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(cuerpo)
+            }).then(function (r) { return r.json(); });
+        }
+
+        // Le pega el código del repartidor al mensaje que ya trae el enlace, para que llegue
+        // escrito en el chat. Eso es lo que sobrevive el salto a la app de WhatsApp.
+        function urlConCodigo(enlace, codigo) {
+            if (!codigo) return enlace.href;
+            try {
+                var u = new URL(enlace.href);
+                var texto = (u.searchParams.get('text') || 'Hola') + ' (tarjeta: ' + codigo + ')';
+
+                // Se arma a mano y NO con searchParams.toString(): ese serializa los
+                // espacios como "+", y WhatsApp los muestra literales en el mensaje
+                // ("Hola+quiero+una+demo"). encodeURIComponent los deja en %20.
+                u.searchParams.delete('text');
+                var resto = u.searchParams.toString();
+                return u.origin + u.pathname + '?'
+                     + (resto ? resto + '&' : '')
+                     + 'text=' + encodeURIComponent(texto);
+            } catch (e) {
+                return enlace.href;
+            }
+        }
+
+        function pintarLista() {
+            var html = '';
+            for (var i = 0; i < repartidores.length; i++) {
+                var r = repartidores[i];
+                html += '<label class="flex items-center gap-3 bg-black/30 hover:bg-black/50 border border-gray-800 rounded-lg px-3 py-2.5 cursor-pointer transition">'
+                      + '<input type="radio" name="bh-referido" value="' + r.id + '" class="accent-bhPurple">'
+                      + '<span class="text-sm text-gray-200"></span></label>';
+            }
+            html += '<label class="flex items-center gap-3 bg-black/30 hover:bg-black/50 border border-gray-800 rounded-lg px-3 py-2.5 cursor-pointer transition">'
+                  + '<input type="radio" name="bh-referido" value="" class="accent-bhPurple" checked>'
+                  + '<span class="text-sm text-gray-400">No recuerdo / la vi en otro lado</span></label>';
+            lista.innerHTML = html;
+
+            // Los nombres se escriben con textContent, nunca concatenados en el HTML: vienen
+            // de la base y no tienen por qué poder inyectar marcado en esta página.
+            var spans = lista.querySelectorAll('label span');
+            for (var j = 0; j < repartidores.length; j++) {
+                spans[j].textContent = repartidores[j].nombre_publico;
+            }
+        }
+
+        function abrir(enlace) {
+            enlaceActual = enlace;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function cerrar() {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            enlaceActual = null;
+        }
+
+        function continuar() {
+            var elegido = lista.querySelector('input[name="bh-referido"]:checked');
+            var id = elegido && elegido.value ? Number(elegido.value) : null;
+            var enlace = enlaceActual;
+            if (!enlace) return;
+
+            btnOk.disabled = true;
+            btnOk.innerHTML = 'Abriendo…';
+
+            // Si el registro falla (sin red, servidor caído), igual se abre el WhatsApp.
+            // Perder la atribución de un lead es barato; perder al cliente no.
+            pedir({ action: 'referido_lead', repartidor_id: id, visitante: visitante() })
+                .then(function (resp) {
+                    window.location.href = urlConCodigo(enlace, resp && resp.codigo);
+                })
+                .catch(function () {
+                    window.location.href = enlace.href;
+                });
+        }
+
+        for (var k = 0; k < enlaces.length; k++) {
+            enlaces[k].addEventListener('click', function (ev) {
+                if (repartidores.length === 0) return; // sin repartidores cargados: enlace normal
+                ev.preventDefault();
+                abrir(this);
+            });
+        }
+
+        btnOk.addEventListener('click', continuar);
+        btnCerrar.addEventListener('click', cerrar);
+        modal.addEventListener('click', function (ev) { if (ev.target === modal) cerrar(); });
+        document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') cerrar(); });
+
+        // Se pide al cargar para que el clic sea instantáneo. Si falla, repartidores queda
+        // vacío y la página se comporta exactamente como antes de todo esto.
+        pedir({ action: 'referidos_lista' })
+            .then(function (resp) {
+                if (resp && resp.success && resp.data && resp.data.length) {
+                    repartidores = resp.data;
+                    pintarLista();
+                }
+            })
+            .catch(function () { /* sin lista, sin pregunta */ });
+    })();
+    </script>
 
 </body>
 </html>

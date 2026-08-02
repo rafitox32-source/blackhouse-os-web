@@ -93,6 +93,29 @@ const TABLAS_HIJAS_SIN_EMPRESA_ID = {
   grupos_compatibilidad_modelos: { tablaPadre: 'grupos_compatibilidad', columnaFK: 'grupo_id' },
 };
 
+// --- REFERIDOS (repartidores de tarjetas, migracion 029) ---
+// La casa matriz es la empresa 1: la misma regla que soy_matriz() en la base (022).
+// Ojo: NO alcanza con rol === 'dueno'. Cada uno de los talleres tiene su propio dueño,
+// y las comisiones son plata de la casa, no de ellos.
+const EMPRESA_MATRIZ = 1;
+
+function esMatriz(userContext) {
+  return !!userContext
+    && userContext.rol === 'dueno'
+    && Number(userContext.empresa_id) === EMPRESA_MATRIZ;
+}
+
+// Texto libre que llega de un formulario publico (el repartidor en la calle, el visitante
+// que escanea): se recorta y se limita el largo. Nada que mande el cliente se guarda sin
+// pasar por aca.
+function textoLimpio(valor, maximo) {
+  if (typeof valor !== 'string') return null;
+  const limpio = valor.trim().slice(0, maximo);
+  return limpio.length > 0 ? limpio : null;
+}
+
+const RE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function tienePermiso(rol, tabla, accion) {
   if (rol === 'dueno') return true;
   const permisosTabla = PERMISOS_POR_ROL[rol] && PERMISOS_POR_ROL[rol][tabla];
@@ -176,7 +199,15 @@ module.exports = async (req, res) => {
     // "pedido_accesorio" tambien es publico (cliente del tracking, sin login):
     // no se valida con JWT sino con el tracking_token exacto de esa orden,
     // verificado mas abajo en su propio bloque.
-    const esAccionPublica = isPublicQuery || action === 'pedido_accesorio';
+    // Los referidos tampoco usan JWT (migracion 029): "referidos_lista" y "referido_lead"
+    // los toca un visitante sin cuenta que acaba de escanear la tarjeta, y las dos del
+    // repartidor se validan con SU token uuid, igual que "pedido_accesorio" con el
+    // tracking_token. Las del panel (referidos_panel, licencia_referido, comision_marcar)
+    // NO estan aca a proposito: esas exigen JWT y ademas ser la casa matriz.
+    const ACCIONES_REFERIDOS_SIN_JWT = ['referidos_lista', 'referido_lead', 'entrega_registrar', 'entregas_mias'];
+    const esAccionPublica = isPublicQuery
+      || action === 'pedido_accesorio'
+      || ACCIONES_REFERIDOS_SIN_JWT.includes(action);
     let userContext = null;
 
     if (!esAccionPublica) {
@@ -272,6 +303,261 @@ module.exports = async (req, res) => {
       // La notificacion ya NO va por el chat: el panel de escritorio consulta
       // pedidos_accesorios directamente (badge de campana, ver index.html).
       return res.status(200).json({ success: true, pedidoId: pedido.id, total, items: itemsFinales });
+    }
+
+    // --- REFERIDOS: lista para el paso "¿quién te dio la tarjeta?" (publica) ---
+    // Solo id y nombre_publico. Ni el telefono, ni el codigo, ni el token personal: esta
+    // lista la ve cualquiera que abra caracteristicas.html.
+    if (action === 'referidos_lista') {
+      const { data, error } = await supabase
+        .from('repartidores')
+        .select('id, nombre_publico')
+        .eq('activo', true)
+        .order('nombre_publico', { ascending: true });
+      if (error) return res.status(400).json({ error: error.message });
+      return res.status(200).json({ success: true, data: data || [] });
+    }
+
+    // --- REFERIDOS: registrar el lead y devolver el codigo para el WhatsApp (publica) ---
+    // El codigo viaja despues en el texto pre-llenado del mensaje. Ese es el truco que
+    // hace que la atribucion sobreviva el salto a la app de WhatsApp, donde se pierden
+    // cookies y sesiones.
+    if (action === 'referido_lead') {
+      const { repartidor_id, visitante } = req.body;
+      const visitanteOk = (typeof visitante === 'string' && RE_UUID.test(visitante)) ? visitante : null;
+
+      // "No recuerdo quién me la dio": la fila se guarda igual, sin repartidor. Despues
+      // se puede completar a mano desde el panel, cuando el se lo pregunte por WhatsApp.
+      if (repartidor_id === null || repartidor_id === undefined || repartidor_id === '') {
+        const { error: errAnon } = await supabase
+          .from('leads')
+          .insert([{ repartidor_id: null, origen: 'tarjeta', visitante: visitanteOk }]);
+        if (errAnon && errAnon.code !== '23505') {
+          return res.status(400).json({ error: errAnon.message });
+        }
+        return res.status(200).json({ success: true, codigo: null, nombre: null });
+      }
+
+      const idRepartidor = Number(repartidor_id);
+      if (!Number.isInteger(idRepartidor) || idRepartidor <= 0) {
+        return res.status(400).json({ error: 'Repartidor inválido.' });
+      }
+
+      const { data: rep, error: errRep } = await supabase
+        .from('repartidores')
+        .select('id, codigo, nombre_publico')
+        .eq('id', idRepartidor)
+        .eq('activo', true)
+        .single();
+      if (errRep || !rep) {
+        return res.status(404).json({ error: 'Ese repartidor no existe o ya no está activo.' });
+      }
+
+      // El indice unico (visitante, repartidor_id) hace que tocar WhatsApp cinco veces
+      // sea UN lead y no cinco. Un choque ahi no es un error: se sigue de largo.
+      const { error: errLead } = await supabase
+        .from('leads')
+        .insert([{ repartidor_id: rep.id, origen: 'tarjeta', visitante: visitanteOk }]);
+      if (errLead && errLead.code !== '23505') {
+        return res.status(400).json({ error: errLead.message });
+      }
+
+      return res.status(200).json({ success: true, codigo: rep.codigo, nombre: rep.nombre_publico });
+    }
+
+    // --- REFERIDOS: lo del repartidor, validado con SU token uuid (link personal) ---
+    // Mismo patron que "pedido_accesorio": sin usuario ni contraseña, el unico "acceso"
+    // que demuestra es conocer su token. Todo lo que devuelve esta acotado a SU id.
+    if (action === 'entrega_registrar' || action === 'entregas_mias') {
+      const tokenRep = typeof req.body.token === 'string' ? req.body.token.trim() : '';
+      if (!RE_UUID.test(tokenRep)) {
+        return res.status(401).json({ error: 'Link inválido.' });
+      }
+
+      const { data: rep, error: errRep } = await supabase
+        .from('repartidores')
+        .select('id, nombre_publico, codigo, comision_pct, activo')
+        .eq('token', tokenRep)
+        .single();
+      if (errRep || !rep || !rep.activo) {
+        return res.status(401).json({ error: 'Link inválido o repartidor desactivado.' });
+      }
+
+      if (action === 'entrega_registrar') {
+        const taller = textoLimpio(req.body.taller_nombre, 120);
+        if (!taller) {
+          return res.status(400).json({ error: 'Falta el nombre del taller.' });
+        }
+        const { data: creada, error: errIns } = await supabase
+          .from('entregas')
+          .insert([{
+            repartidor_id: rep.id, // del token, nunca del cuerpo del pedido
+            taller_nombre: taller,
+            direccion: textoLimpio(req.body.direccion, 200),
+            distrito: textoLimpio(req.body.distrito, 80),
+            contacto: textoLimpio(req.body.contacto, 120),
+            telefono: textoLimpio(req.body.telefono, 40),
+            notas: textoLimpio(req.body.notas, 500),
+          }])
+          .select('id')
+          .single();
+        if (errIns) return res.status(400).json({ error: errIns.message });
+        return res.status(200).json({ success: true, id: creada.id });
+      }
+
+      // entregas_mias: sus ultimas entregas y sus numeros. Nada de otros repartidores.
+      const [listado, totalEntregas, totalLeads, licenciasSuyas] = await Promise.all([
+        supabase.from('entregas')
+          .select('id, taller_nombre, distrito, direccion, contacto, telefono, creado_en')
+          .eq('repartidor_id', rep.id).order('creado_en', { ascending: false }).limit(100),
+        supabase.from('entregas').select('id', { count: 'exact', head: true }).eq('repartidor_id', rep.id),
+        supabase.from('leads').select('id', { count: 'exact', head: true }).eq('repartidor_id', rep.id),
+        supabase.from('licencias').select('comision_monto, comision_estado').eq('repartidor_id', rep.id),
+      ]);
+      if (listado.error) return res.status(400).json({ error: listado.error.message });
+
+      const filasLic = licenciasSuyas.data || [];
+      const sumaPorEstado = (estado) => filasLic
+        .filter(l => l.comision_estado === estado)
+        .reduce((t, l) => t + Number(l.comision_monto || 0), 0);
+
+      return res.status(200).json({
+        success: true,
+        repartidor: { nombre: rep.nombre_publico, codigo: rep.codigo, comision_pct: rep.comision_pct },
+        entregas: listado.data || [],
+        totales: {
+          entregas: totalEntregas.count || 0,
+          leads: totalLeads.count || 0,
+          ventas: filasLic.length,
+          comision_pendiente: sumaPorEstado('pendiente'),
+          comision_pagada: sumaPorEstado('pagada'),
+        },
+      });
+    }
+
+    // --- REFERIDOS: panel de la casa matriz (exige JWT + ser la empresa 1) ---
+    if (action === 'referidos_panel' || action === 'referido_guardar'
+        || action === 'licencia_referido' || action === 'comision_marcar') {
+      if (!esMatriz(userContext)) {
+        return res.status(403).json({ error: 'Solo la casa matriz puede ver o tocar los referidos.' });
+      }
+
+      if (action === 'referido_guardar') {
+        const nombre = textoLimpio(req.body.nombre, 120);
+        const nombrePublico = textoLimpio(req.body.nombre_publico, 60) || nombre;
+        const codigo = (textoLimpio(req.body.codigo, 16) || '').toUpperCase();
+        const pct = Number(req.body.comision_pct);
+
+        const campos = {
+          telefono: textoLimpio(req.body.telefono, 40),
+          zona: textoLimpio(req.body.zona, 80),
+          activo: req.body.activo !== false,
+        };
+        if (nombre) campos.nombre = nombre;
+        if (nombrePublico) campos.nombre_publico = nombrePublico;
+        if (Number.isFinite(pct) && pct >= 0 && pct <= 100) campos.comision_pct = pct;
+
+        if (req.body.id) {
+          // Al editar, el codigo no se toca: ya salio impreso en mensajes de WhatsApp y
+          // esta apuntado en leads viejos. Cambiarlo rompe el rastro hacia atras.
+          const { data, error } = await supabase
+            .from('repartidores').update(campos).eq('id', Number(req.body.id)).select('id').single();
+          if (error) return res.status(400).json({ error: error.message });
+          return res.status(200).json({ success: true, id: data.id });
+        }
+
+        if (!campos.nombre) return res.status(400).json({ error: 'Falta el nombre.' });
+        if (!/^[A-Z0-9]{2,16}$/.test(codigo)) {
+          return res.status(400).json({ error: 'El código debe ser de 2 a 16 letras o números, sin espacios ni tildes.' });
+        }
+        const { data, error } = await supabase
+          .from('repartidores').insert([{ ...campos, codigo }]).select('id, token').single();
+        if (error) {
+          if (error.code === '23505') return res.status(400).json({ error: `El código "${codigo}" ya está usado por otro repartidor.` });
+          return res.status(400).json({ error: error.message });
+        }
+        return res.status(200).json({ success: true, id: data.id, token: data.token });
+      }
+
+      if (action === 'licencia_referido') {
+        const licenciaId = Number(req.body.licencia_id);
+        if (!Number.isInteger(licenciaId) || licenciaId <= 0) {
+          return res.status(400).json({ error: 'Licencia inválida.' });
+        }
+        const monto = Number(req.body.venta_monto);
+        if (!Number.isFinite(monto) || monto < 0) {
+          return res.status(400).json({ error: 'Monto de venta inválido.' });
+        }
+
+        // Sin repartidor: la venta no le corresponde a nadie y vuelve a 'na'.
+        if (!req.body.repartidor_id) {
+          const { error } = await supabase.from('licencias').update({
+            repartidor_id: null, venta_monto: monto,
+            comision_monto: null, comision_estado: 'na', comision_pagada_en: null,
+          }).eq('id', licenciaId);
+          if (error) return res.status(400).json({ error: error.message });
+          return res.status(200).json({ success: true, comision: 0 });
+        }
+
+        // El porcentaje sale del repartidor en la base, nunca de lo que mande el navegador.
+        const { data: rep, error: errRep } = await supabase
+          .from('repartidores').select('id, comision_pct').eq('id', Number(req.body.repartidor_id)).single();
+        if (errRep || !rep) return res.status(404).json({ error: 'Repartidor no encontrado.' });
+
+        const comision = Math.round(monto * Number(rep.comision_pct)) / 100;
+        const { error } = await supabase.from('licencias').update({
+          repartidor_id: rep.id,
+          venta_monto: monto,
+          comision_monto: comision,
+          comision_estado: 'pendiente',
+          comision_pagada_en: null,
+        }).eq('id', licenciaId);
+        if (error) return res.status(400).json({ error: error.message });
+        return res.status(200).json({ success: true, comision });
+      }
+
+      if (action === 'comision_marcar') {
+        const licenciaId = Number(req.body.licencia_id);
+        const estado = req.body.estado;
+        if (!Number.isInteger(licenciaId) || licenciaId <= 0) {
+          return res.status(400).json({ error: 'Licencia inválida.' });
+        }
+        if (estado !== 'pendiente' && estado !== 'pagada') {
+          return res.status(400).json({ error: 'Estado inválido.' });
+        }
+        const { error } = await supabase.from('licencias').update({
+          comision_estado: estado,
+          comision_pagada_en: estado === 'pagada' ? new Date().toISOString() : null,
+        }).eq('id', licenciaId).eq('comision_estado', estado === 'pagada' ? 'pendiente' : 'pagada');
+        if (error) return res.status(400).json({ error: error.message });
+        return res.status(200).json({ success: true });
+      }
+
+      // referidos_panel: todo lo que necesita la pantalla, en un solo viaje.
+      const [repartidores, entregas, leads, licencias] = await Promise.all([
+        supabase.from('repartidores')
+          .select('id, nombre, nombre_publico, telefono, zona, codigo, token, comision_pct, activo, creado_en')
+          .order('activo', { ascending: false }).order('nombre', { ascending: true }),
+        supabase.from('entregas')
+          .select('id, repartidor_id, taller_nombre, distrito, direccion, contacto, telefono, creado_en')
+          .order('creado_en', { ascending: false }).limit(500),
+        supabase.from('leads')
+          .select('id, repartidor_id, origen, creado_en')
+          .order('creado_en', { ascending: false }).limit(500),
+        supabase.from('licencias')
+          .select('id, codigo, usada, meses_duracion, dias_duracion, created_at, repartidor_id, venta_monto, comision_monto, comision_estado, comision_pagada_en')
+          .order('created_at', { ascending: false }).limit(500),
+      ]);
+      const fallo = [repartidores, entregas, leads, licencias].find(r => r.error);
+      if (fallo) return res.status(400).json({ error: fallo.error.message });
+
+      return res.status(200).json({
+        success: true,
+        repartidores: repartidores.data || [],
+        entregas: entregas.data || [],
+        leads: leads.data || [],
+        licencias: licencias.data || [],
+      });
     }
 
     // --- MATRIZ DE PERMISOS: bloquear tablas/acciones no autorizadas ---
