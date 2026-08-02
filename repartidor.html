@@ -46,6 +46,15 @@
 
     <main id="pantalla-app" class="hidden">
 
+        <!-- Se dibujó con datos viejos porque no hay señal -->
+        <div id="caja-offline" class="hidden bg-gray-500/10 border border-gray-600/50 rounded-xl p-3 mb-5">
+            <p class="text-gray-300 text-sm">
+                <i class="fa-solid fa-wifi mr-1 opacity-50"></i>
+                <strong>Sin señal.</strong> Estos números son de la última vez que abriste con datos.
+                Podés seguir registrando talleres igual: se suben solos después.
+            </p>
+        </div>
+
         <header class="mb-6">
             <p class="text-gray-500 text-xs uppercase tracking-wider mb-1">BlackHouse OS</p>
             <h1 id="saludo" class="text-2xl font-black text-white"></h1>
@@ -90,7 +99,22 @@
             <h2 class="text-white font-bold mb-1">Registrar una entrega</h2>
             <p class="text-gray-400 text-xs mb-4">Anotá cada taller donde dejes tarjeta. Con el nombre alcanza; lo demás ayuda pero es opcional.</p>
 
-            <!-- Ubicación: se pide cuando él la toca, no al abrir la página -->
+                <!-- Entregas guardadas en el celular esperando señal -->
+            <div id="caja-cola" class="hidden bg-blue-500/10 border border-blue-500/40 rounded-xl p-3 mb-3">
+                <p class="text-blue-300 text-sm font-bold mb-1">
+                    <i class="fa-solid fa-cloud-arrow-up mr-1"></i>
+                    <span id="texto-cola"></span>
+                </p>
+                <p class="text-blue-200/70 text-xs mb-2">
+                    Están guardadas en tu celular. Se suben solas apenas haya señal; no las escribas de nuevo.
+                </p>
+                <button id="btn-reintentar" type="button"
+                        class="text-xs bg-blue-500/20 hover:bg-blue-500/30 text-blue-200 border border-blue-500/40 rounded-lg px-3 py-1.5 transition">
+                    Intentar ahora
+                </button>
+            </div>
+
+        <!-- Ubicación: se pide cuando él la toca, no al abrir la página -->
             <div class="bg-black/30 border border-gray-800 rounded-xl p-3 mb-3">
                 <button id="btn-ubicar" type="button"
                         class="w-full bg-bhPurple hover:bg-bhPurpleHover text-white font-bold px-4 py-2.5 rounded-lg text-sm transition flex items-center justify-center gap-2">
@@ -188,6 +212,87 @@
             body: JSON.stringify(cuerpo)
         }).then(function (r) { return r.json(); });
     }
+
+    // --- Cola para cuando no hay señal ------------------------------------
+    // Los talleres están en galerías y sótanos sin datos. En vez de perder lo que escribió,
+    // la entrega se guarda en el celular y se sube sola cuando vuelve la conexión.
+    // Se guardan por token: si dos repartidores usan el mismo celular, ninguno ve lo del otro.
+    var COLA  = 'bh_cola_'  + token.slice(0, 8);
+    var CACHE = 'bh_cache_' + token.slice(0, 8);
+
+    function leerCola() {
+        try { return JSON.parse(localStorage.getItem(COLA) || '[]'); }
+        catch (e) { return []; }
+    }
+
+    function escribirCola(lista) {
+        try { localStorage.setItem(COLA, JSON.stringify(lista)); } catch (e) { /* sin espacio */ }
+        pintarCola();
+    }
+
+    function pintarCola() {
+        var n = leerCola().length;
+        var caja = document.getElementById('caja-cola');
+        caja.classList.toggle('hidden', n === 0);
+        if (n > 0) {
+            document.getElementById('texto-cola').textContent =
+                n === 1 ? '1 entrega esperando señal' : n + ' entregas esperando señal';
+        }
+    }
+
+    var subiendo = false;
+
+    // Sube lo que haya en la cola, de a una y en orden. Si vuelve a fallar la red, corta y
+    // deja el resto para el próximo intento: no tiene sentido insistir sin conexión.
+    function vaciarCola() {
+        if (subiendo) return Promise.resolve();
+        var lista = leerCola();
+        if (lista.length === 0) return Promise.resolve();
+
+        subiendo = true;
+        var quedan = lista.slice();
+        var subidas = 0, descartadas = 0;
+
+        function siguiente() {
+            if (quedan.length === 0) return Promise.resolve();
+            var item = quedan[0];
+            return pedir(item).then(function (resp) {
+                if (resp && resp.success) {
+                    // Incluye el caso "repetida": ya estaba guardada, la respuesta se
+                    // había perdido. Sale de la cola igual (ver migración 034).
+                    quedan.shift(); subidas++;
+                    return siguiente();
+                }
+                // Error del servidor con datos malos: reintentarlo eternamente no lo va a
+                // arreglar. Se descarta para no dejar la cola trabada para siempre.
+                quedan.shift(); descartadas++;
+                return siguiente();
+            });
+            // Un fallo de red rechaza la promesa y corta la cadena: se maneja abajo.
+        }
+
+        return siguiente().catch(function () { /* sin señal: lo que quede se reintenta después */ })
+            .then(function () {
+                subiendo = false;
+                escribirCola(quedan);
+                if (subidas > 0) {
+                    elAviso.textContent = subidas === 1
+                        ? 'Se subió 1 entrega que estaba esperando señal.'
+                        : 'Se subieron ' + subidas + ' entregas que estaban esperando señal.';
+                    elAviso.className = 'text-center text-xs text-bhGreen';
+                    elAviso.classList.remove('hidden');
+                    cargar();
+                }
+                if (descartadas > 0) {
+                    elAviso.textContent = 'Se descartaron ' + descartadas + ' entregas que el servidor rechazó. Volvé a cargarlas.';
+                    elAviso.className = 'text-center text-xs text-red-400';
+                    elAviso.classList.remove('hidden');
+                }
+            });
+    }
+
+    window.addEventListener('online', vaciarCola);
+    document.getElementById('btn-reintentar').addEventListener('click', vaciarCola);
 
     function mostrarError(texto) {
         elCarga.classList.add('hidden');
@@ -416,9 +521,21 @@
                 mostrarError(resp && resp.error ? resp.error : null);
                 return;
             }
+            try { localStorage.setItem(CACHE, JSON.stringify(resp)); } catch (e) { /* sin espacio */ }
             pintar(resp);
+            document.getElementById('caja-offline').classList.add('hidden');
         }).catch(function () {
-            mostrarError('No hay conexión. Probá de nuevo en un momento.');
+            // Sin conexión NO se muestra la pantalla de error: se dibuja con lo último que
+            // se vio con señal, para que pueda seguir registrando talleres. Lo que cargue
+            // se va a la cola. Mostrarle un cartel de error sería dejarlo sin trabajar.
+            var guardado = null;
+            try { guardado = JSON.parse(localStorage.getItem(CACHE) || 'null'); } catch (e) { }
+            if (guardado) {
+                pintar(guardado);
+                document.getElementById('caja-offline').classList.remove('hidden');
+            } else {
+                mostrarError('No hay conexión, y esta página todavía no se abrió nunca con señal. Probá con datos activados.');
+            }
         });
     }
 
@@ -436,28 +553,46 @@
             cuerpo.precision_m = punto.precision;
         }
 
+        // Identificador propio ANTES de mandarla: si esta entrega termina en la cola y se
+        // reenvía, el servidor la reconoce y no la duplica (migración 034).
+        try {
+            if (window.crypto && crypto.randomUUID) cuerpo.cliente_uuid = crypto.randomUUID();
+        } catch (e) { /* sin randomUUID se manda sin identificador */ }
+
         btn.disabled = true;
         btn.textContent = 'Guardando…';
         elAviso.classList.add('hidden');
 
-        pedir(cuerpo).then(function (resp) {
+        // Deja la pantalla lista para el próximo taller. Se hace igual haya ido al servidor
+        // o a la cola: para él la entrega ya está tomada, y lo que no puede pasar es que
+        // tenga que reescribirla.
+        function listoParaElSiguiente(mensaje) {
             btn.disabled = false;
             btn.textContent = 'Guardar entrega';
-            if (!resp || !resp.success) {
-                elAviso.textContent = (resp && resp.error) || 'No se pudo guardar.';
-                elAviso.className = 'text-center text-xs text-red-400';
-                return;
-            }
             form.reset();
-            elAviso.textContent = punto ? 'Entrega guardada con ubicación.' : 'Entrega guardada (sin ubicación).';
+            elAviso.textContent = mensaje;
             elAviso.className = 'text-center text-xs text-bhGreen';
+            elAviso.classList.remove('hidden');
 
-            // La ubicación se suelta después de guardar: el próximo taller es otra puerta.
-            // Si no, quedarían cinco talleres distintos con la misma coordenada.
             var estabaEn = punto;
             punto = null;
             estadoGps.textContent = 'Marcá la ubicación parado en la puerta del próximo taller.';
             document.getElementById('aviso-repetido').classList.add('hidden');
+            return estabaEn;
+        }
+
+        pedir(cuerpo).then(function (resp) {
+            if (!resp || !resp.success) {
+                // El servidor contestó y rechazó: son datos malos, encolarlo no lo arregla.
+                btn.disabled = false;
+                btn.textContent = 'Guardar entrega';
+                elAviso.textContent = (resp && resp.error) || 'No se pudo guardar.';
+                elAviso.className = 'text-center text-xs text-red-400';
+                elAviso.classList.remove('hidden');
+                return;
+            }
+            var estabaEn = listoParaElSiguiente(
+                cuerpo.lat ? 'Entrega guardada con ubicación.' : 'Entrega guardada (sin ubicación).');
 
             // Los cercanos se recargan desde donde estaba, para que la marca nueva aparezca.
             if (estabaEn) {
@@ -466,17 +601,19 @@
             }
             return cargar();
         }).catch(function () {
-            btn.disabled = false;
-            btn.textContent = 'Guardar entrega';
-            elAviso.textContent = 'Sin conexión. No se guardó, probá de nuevo.';
-            elAviso.className = 'text-center text-xs text-red-400';
+            // No hubo respuesta: sin señal. Se guarda en el celular y sigue trabajando.
+            var lista = leerCola();
+            lista.push(cuerpo);
+            escribirCola(lista);
+            listoParaElSiguiente('Sin señal: quedó guardada en tu celular y se sube sola.');
         });
     });
 
     if (!token) {
         mostrarError('Te falta el link personal. Pedíselo a BlackHouse OS.');
     } else {
-        cargar();
+        pintarCola();
+        cargar().then(vaciarCola);   // al abrir, intenta subir lo que haya quedado pendiente
     }
 })();
 </script>

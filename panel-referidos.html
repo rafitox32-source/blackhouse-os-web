@@ -325,6 +325,44 @@
             });
             tdLink.appendChild(btn);
 
+            // Su link no tiene contraseña: el que lo tiene, es él. Esto es lo único que
+            // corta el acceso si pierde el celular o se lo pasa a otro.
+            var btnNuevo = document.createElement('button');
+            btnNuevo.type = 'button';
+            btnNuevo.className = 'ml-2 text-xs text-gray-500 hover:text-yellow-400 border border-gray-800 hover:border-yellow-600/50 rounded-lg px-2.5 py-1.5 transition';
+            btnNuevo.innerHTML = '<i class="fa-solid fa-rotate"></i>';
+            btnNuevo.title = 'Generar un link nuevo (el anterior deja de servir)';
+            btnNuevo.setAttribute('data-id', r.id);
+            btnNuevo.setAttribute('data-nombre', r.nombre);
+            btnNuevo.addEventListener('click', function () {
+                var nombre = this.getAttribute('data-nombre');
+                if (!window.confirm('Generar un link nuevo para ' + nombre + '?\n\n'
+                    + 'El link que tiene ahora va a dejar de funcionar y no va a poder registrar '
+                    + 'entregas hasta que le mandes el nuevo.\n\n'
+                    + 'Sus entregas y comisiones no se tocan.')) return;
+
+                var boton = this;
+                boton.disabled = true;
+                pedir({ action: 'referido_token_nuevo', id: Number(this.getAttribute('data-id')) })
+                    .then(function (resp) {
+                        boton.disabled = false;
+                        if (!resp || !resp.success) {
+                            alert((resp && resp.error) || 'No se pudo generar el link nuevo.');
+                            return;
+                        }
+                        var url = window.location.origin + '/repartidor.html?t=' + resp.token;
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            navigator.clipboard.writeText(url).then(
+                                function () { alert('Link nuevo copiado. Mandáselo a ' + nombre + ' por WhatsApp.'); },
+                                function () { window.prompt('Link nuevo para ' + nombre + ':', url); });
+                        } else {
+                            window.prompt('Link nuevo para ' + nombre + ':', url);
+                        }
+                        return cargar();
+                    });
+            });
+            tdLink.appendChild(btnNuevo);
+
             tblRep.appendChild(fila);
         }
     }

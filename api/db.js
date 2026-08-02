@@ -445,10 +445,23 @@ module.exports = async (req, res) => {
             lat: hayPunto ? lat : null,
             lng: hayPunto ? lng : null,
             precision_m: (hayPunto && Number.isFinite(prec) && prec >= 0) ? Math.round(prec) : null,
+            // Identificador que puso el celular (migracion 034). Si esta entrega venia de la
+            // cola sin señal y ya se habia guardado, el indice unico hace chocar el reintento.
+            cliente_uuid: (typeof req.body.cliente_uuid === 'string' && RE_UUID.test(req.body.cliente_uuid))
+              ? req.body.cliente_uuid : null,
           }])
           .select('id')
           .single();
-        if (errIns) return res.status(400).json({ error: errIns.message });
+
+        if (errIns) {
+          // 23505 = choque del indice unico: esta entrega YA se habia guardado y lo que se
+          // perdio fue la respuesta, no el pedido. Reintentar tiene que salir bien, no dar
+          // error, o el celular la va a reencolar para siempre.
+          if (errIns.code === '23505') {
+            return res.status(200).json({ success: true, repetida: true, con_ubicacion: hayPunto });
+          }
+          return res.status(400).json({ error: errIns.message });
+        }
         return res.status(200).json({ success: true, id: creada.id, con_ubicacion: hayPunto });
       }
 
@@ -528,6 +541,7 @@ module.exports = async (req, res) => {
 
     // --- REFERIDOS: panel de la casa matriz (exige JWT + ser la empresa 1) ---
     if (action === 'referidos_panel' || action === 'referido_guardar'
+        || action === 'referido_token_nuevo'
         || action === 'licencia_referido' || action === 'comision_marcar') {
       if (!esMatriz(userContext)) {
         return res.status(403).json({ error: 'Solo la casa matriz puede ver o tocar los referidos.' });
@@ -575,6 +589,25 @@ module.exports = async (req, res) => {
       // renovacion y asignarle un repartidor a mano — por eso el panel lo avisa. Detectarlo
       // automaticamente no se puede: `licencias` no tiene ninguna columna que la ate a la
       // empresa que la usó.
+      // --- Regenerar el link personal de un repartidor ---
+      // Su link no tiene contraseña: el que lo tiene, es él. Si pierde el celular o se lo
+      // pasa a otro, esto es lo que corta el acceso viejo. El token nuevo lo genera el
+      // servidor, nunca el navegador. Sus entregas y comisiones no se tocan: cuelgan del id.
+      if (action === 'referido_token_nuevo') {
+        const idRep = Number(req.body.id);
+        if (!Number.isInteger(idRep) || idRep <= 0) {
+          return res.status(400).json({ error: 'Repartidor inválido.' });
+        }
+        const { data, error } = await supabase
+          .from('repartidores')
+          .update({ token: require('crypto').randomUUID() })
+          .eq('id', idRep)
+          .select('id, token')
+          .single();
+        if (error) return res.status(400).json({ error: error.message });
+        return res.status(200).json({ success: true, token: data.token });
+      }
+
       if (action === 'licencia_referido') {
         const licenciaId = Number(req.body.licencia_id);
         if (!Number.isInteger(licenciaId) || licenciaId <= 0) {
