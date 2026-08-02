@@ -97,7 +97,7 @@
         <!-- Registrar un taller -->
         <section class="bg-gradient-to-br from-bhPurple/15 to-transparent border border-bhPurple/30 rounded-2xl p-5 mb-7">
             <h2 class="text-white font-bold mb-1">Registrar una entrega</h2>
-            <p class="text-gray-400 text-xs mb-4">Anotá cada taller donde dejes tarjeta. Con el nombre alcanza; lo demás ayuda pero es opcional.</p>
+            <p class="text-gray-400 text-xs mb-4">Un toque y listo. No hace falta escribir nada.</p>
 
                 <!-- Entregas guardadas en el celular esperando señal -->
             <div id="caja-cola" class="hidden bg-blue-500/10 border border-blue-500/40 rounded-xl p-3 mb-3">
@@ -114,27 +114,50 @@
                 </button>
             </div>
 
-        <!-- Ubicación: se pide cuando él la toca, no al abrir la página -->
-            <div class="bg-black/30 border border-gray-800 rounded-xl p-3 mb-3">
-                <button id="btn-ubicar" type="button"
-                        class="w-full bg-bhPurple hover:bg-bhPurpleHover text-white font-bold px-4 py-2.5 rounded-lg text-sm transition flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-location-crosshairs"></i> Marcar mi ubicación
-                </button>
-                <p id="estado-gps" class="text-xs text-gray-500 mt-2 text-center">
-                    Marcá la ubicación parado en la puerta del taller.
+            <!-- EL botón. Un toque: toma la ubicación y registra. -->
+            <button id="btn-registrar" type="button"
+                    class="w-full bg-bhGreen text-black font-extrabold px-5 py-5 rounded-xl hover:opacity-90 transition text-lg flex items-center justify-center gap-3">
+                <i class="fa-solid fa-location-crosshairs text-xl"></i> Marcar este taller
+            </button>
+            <p id="estado-gps" class="text-xs text-gray-400 mt-2 text-center">
+                Parado en la puerta del local, tocá el botón. Con eso ya queda registrado.
+            </p>
+            <p id="aviso" class="text-center text-xs mt-2 hidden"></p>
+
+            <!-- Ayuda cuando el navegador no deja usar la ubicación -->
+            <div id="ayuda-permiso" class="hidden bg-red-500/10 border border-red-500/40 rounded-xl p-3 mt-3">
+                <p class="text-red-300 text-sm font-bold mb-2">
+                    <i class="fa-solid fa-location-dot mr-1"></i> El celular no está dando la ubicación
                 </p>
+                <div id="texto-permiso" class="text-red-200/80 text-xs space-y-2"></div>
             </div>
 
             <!-- Aviso de local ya visitado -->
-            <div id="aviso-repetido" class="hidden bg-yellow-500/10 border border-yellow-500/40 rounded-xl p-3 mb-3">
+            <div id="aviso-repetido" class="hidden bg-yellow-500/10 border border-yellow-500/40 rounded-xl p-3 mt-3">
                 <p class="text-yellow-300 text-sm font-bold mb-1">
                     <i class="fa-solid fa-triangle-exclamation mr-1"></i> Acá ya se dejó tarjeta
                 </p>
-                <p id="detalle-repetido" class="text-yellow-200/80 text-xs"></p>
+                <p id="detalle-repetido" class="text-yellow-200/80 text-xs mb-3"></p>
+                <div class="flex gap-2">
+                    <button id="btn-igual" type="button"
+                            class="flex-1 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-200 border border-yellow-500/40 rounded-lg px-3 py-2 text-xs font-bold transition">
+                        Es otro local, registrar
+                    </button>
+                    <button id="btn-no-registrar" type="button"
+                            class="flex-1 text-gray-400 hover:text-white border border-gray-700 rounded-lg px-3 py-2 text-xs transition">
+                        Dejar así
+                    </button>
+                </div>
             </div>
 
-            <form id="form-entrega" class="space-y-3">
-                <input id="f-taller" type="text" required maxlength="120" placeholder="Nombre del taller *"
+            <!-- Datos del taller: opcionales, plegados. Solo si tiene tiempo. -->
+            <button id="btn-mas-datos" type="button"
+                    class="w-full text-gray-500 hover:text-gray-300 text-xs mt-4 transition">
+                <i class="fa-solid fa-plus mr-1"></i> Agregar datos del taller (opcional)
+            </button>
+
+            <form id="form-entrega" class="hidden space-y-3 mt-3">
+                <input id="f-taller" type="text" maxlength="120" placeholder="Nombre del taller"
                        class="w-full bg-black/40 border border-gray-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:border-bhPurple focus:outline-none">
                 <div class="grid grid-cols-2 gap-3">
                     <input id="f-distrito" type="text" maxlength="80" placeholder="Distrito"
@@ -150,10 +173,12 @@
                           class="w-full bg-black/40 border border-gray-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:border-bhPurple focus:outline-none resize-none"></textarea>
 
                 <button id="btn-guardar" type="submit"
-                        class="w-full bg-bhGreen text-black font-extrabold px-5 py-3 rounded-xl hover:opacity-90 transition text-sm">
-                    Guardar entrega
+                        class="w-full bg-bhPurple hover:bg-bhPurpleHover text-white font-bold px-5 py-3 rounded-xl transition text-sm">
+                    Registrar con estos datos
                 </button>
-                <p id="aviso" class="text-center text-xs hidden"></p>
+                <p class="text-gray-600 text-xs text-center">
+                    Sirve igual sin ubicación: si el GPS no anda, con el nombre alcanza.
+                </p>
             </form>
         </section>
 
@@ -330,43 +355,128 @@
     }
 
     var estadoGps = document.getElementById('estado-gps');
-    var btnUbicar = document.getElementById('btn-ubicar');
+    var btnRegistrar = document.getElementById('btn-registrar');
+    var cajaPermiso = document.getElementById('ayuda-permiso');
 
-    btnUbicar.addEventListener('click', function () {
-        if (!navigator.geolocation) {
-            estadoGps.textContent = 'Este celular no permite ubicación. Podés guardar igual, sin marcarla.';
-            return;
+    // Por qué NO alcanza con el error de getCurrentPosition: si el permiso ya se denegó una
+    // vez, el navegador ni pregunta y devuelve el mismo código 1 que si el usuario acabara
+    // de decir que no. Para el repartidor son situaciones distintas y se arreglan distinto.
+    function porQueNoHayUbicacion() {
+        if (!window.isSecureContext) return Promise.resolve('sin-https');
+        if (!navigator.geolocation) return Promise.resolve('no-soportado');
+        if (!navigator.permissions || !navigator.permissions.query) return Promise.resolve('preguntar');
+        return navigator.permissions.query({ name: 'geolocation' })
+            .then(function (p) { return p.state === 'denied' ? 'bloqueado' : 'preguntar'; })
+            .catch(function () { return 'preguntar'; });
+    }
+
+    function mostrarAyudaPermiso(caso) {
+        var caja = document.getElementById('texto-permiso');
+        caja.innerHTML = '';
+        var puntos = [];
+
+        if (caso === 'sin-https') {
+            puntos.push('Esta página se abrió sin conexión segura, y el celular no deja usar la ubicación así. '
+                      + 'Entrá por el link que te pasaron, el que empieza con <strong>https://</strong>.');
+        } else if (caso === 'no-soportado') {
+            puntos.push('Este navegador no maneja ubicación. Probá abrir el link en <strong>Chrome</strong>.');
+        } else {
+            // Bloqueado. Las dos causas de lejos más comunes, en orden de probabilidad.
+            puntos.push('<strong>¿Abriste el link desde WhatsApp?</strong> El navegador de adentro de WhatsApp '
+                      + 'no da ubicación. Tocá los tres puntitos ⋮ arriba a la derecha y elegí '
+                      + '<strong>«Abrir en Chrome»</strong> (o en el navegador).');
+            puntos.push('<strong>¿Ya lo abriste en Chrome?</strong> Entonces el permiso quedó bloqueado de antes: '
+                      + 'tocá el <strong>candado 🔒</strong> al lado de la dirección → Permisos → Ubicación → Permitir. '
+                      + 'Después recargá.');
+            puntos.push('Mientras tanto podés registrar igual: abrí «Agregar datos del taller» y poné el nombre.');
         }
-        btnUbicar.disabled = true;
-        estadoGps.textContent = 'Buscando señal…';
 
-        navigator.geolocation.getCurrentPosition(function (pos) {
-            btnUbicar.disabled = false;
-            punto = {
-                lat: pos.coords.latitude,
-                lng: pos.coords.longitude,
-                precision: Math.round(pos.coords.accuracy || 0)
-            };
-            estadoGps.innerHTML = '<span class="text-bhGreen font-bold">Ubicación marcada</span>'
-                                + ' · precisión ' + punto.precision + ' m';
-            if (punto.precision > 100) {
-                estadoGps.innerHTML += '<br><span class="text-yellow-400">Señal floja: puede errar de local. '
-                                     + 'Probá salir a la vereda y marcar de nuevo.</span>';
-            }
-            cargarCerca();
-        }, function (err) {
-            btnUbicar.disabled = false;
-            estadoGps.textContent = (err && err.code === 1)
-                ? 'No diste permiso de ubicación. Podés guardar la entrega igual, sin marcarla.'
-                : 'No se pudo tomar la ubicación. Podés guardar igual, sin marcarla.';
-        }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 });
+        for (var i = 0; i < puntos.length; i++) {
+            var p = document.createElement('p');
+            p.innerHTML = puntos[i];   // texto fijo escrito acá, no viene de la base
+            caja.appendChild(p);
+        }
+        cajaPermiso.classList.remove('hidden');
+    }
+
+    // Toma la ubicación. Resuelve con el punto, o con null si no se pudo (y ahí ya dejó
+    // la explicación en pantalla).
+    function tomarUbicacion() {
+        return porQueNoHayUbicacion().then(function (caso) {
+            if (caso !== 'preguntar') { mostrarAyudaPermiso(caso); return null; }
+
+            estadoGps.textContent = 'Buscando señal del GPS…';
+            return new Promise(function (resolver) {
+                navigator.geolocation.getCurrentPosition(function (pos) {
+                    cajaPermiso.classList.add('hidden');
+                    resolver({
+                        lat: pos.coords.latitude,
+                        lng: pos.coords.longitude,
+                        precision: Math.round(pos.coords.accuracy || 0)
+                    });
+                }, function (err) {
+                    if (err && err.code === 1) {
+                        mostrarAyudaPermiso('bloqueado');
+                    } else {
+                        estadoGps.textContent = 'No se pudo tomar la ubicación (sin señal de GPS). '
+                                              + 'Probá salir a la vereda, o registralo con el nombre.';
+                    }
+                    resolver(null);
+                }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 });
+            });
+        });
+    }
+
+    // El botón grande: toma la ubicación, mira si el local ya estaba marcado y registra.
+    btnRegistrar.addEventListener('click', function () {
+        btnRegistrar.disabled = true;
+        elAviso.classList.add('hidden');
+        document.getElementById('aviso-repetido').classList.add('hidden');
+
+        tomarUbicacion().then(function (p) {
+            if (!p) { btnRegistrar.disabled = false; return; }
+            punto = p;
+            estadoGps.innerHTML = 'Ubicación tomada · precisión ' + p.precision + ' m'
+                + (p.precision > 100
+                    ? '<br><span class="text-yellow-400">Señal floja: puede errar de local.</span>' : '');
+
+            return cargarCerca().then(function (repetidos) {
+                btnRegistrar.disabled = false;
+                // Si hay un local marcado al lado, se le pregunta antes de registrar.
+                if (repetidos && repetidos.length > 0) return;
+                return registrar();
+            });
+        }).catch(function () {
+            btnRegistrar.disabled = false;
+        });
     });
 
-    function cargarCerca() {
-        if (!punto) return Promise.resolve();
+    document.getElementById('btn-igual').addEventListener('click', function () {
+        document.getElementById('aviso-repetido').classList.add('hidden');
+        registrar();
+    });
+
+    document.getElementById('btn-no-registrar').addEventListener('click', function () {
+        document.getElementById('aviso-repetido').classList.add('hidden');
+        punto = null;
+        estadoGps.textContent = 'No se registró. Seguí al próximo taller.';
+    });
+
+    document.getElementById('btn-mas-datos').addEventListener('click', function () {
+        var f = document.getElementById('form-entrega');
+        f.classList.toggle('hidden');
+        if (!f.classList.contains('hidden')) document.getElementById('f-taller').focus();
+    });
+
+    // Devuelve las marcas que caen dentro del radio de "mismo local", para que quien la
+    // llamó decida si registra directo o pregunta primero.
+    // avisar = false se usa DESPUÉS de registrar: refresca la lista para que aparezca la
+    // marca nueva, pero no vuelve a mostrar "acá ya se dejó tarjeta" — lo acaba de hacer él.
+    function cargarCerca(avisar) {
+        if (!punto) return Promise.resolve([]);
         return pedir({ action: 'entregas_cerca', token: token, lat: punto.lat, lng: punto.lng })
             .then(function (resp) {
-                if (!resp || !resp.success) return;
+                if (!resp || !resp.success) return [];
 
                 // Se ordenan por distancia real: la caja del servidor es cuadrada, no redonda.
                 var marcas = (resp.marcas || []).map(function (m) {
@@ -377,23 +487,30 @@
                 }).sort(function (a, b) { return a.distancia - b.distancia; });
 
                 pintarCerca(marcas);
-                avisarRepetido(marcas);
+                if (avisar === false) return [];
+                return avisarRepetido(marcas);
             })
-            .catch(function () { /* sin lista de cercanos se puede seguir trabajando */ });
+            .catch(function () { return []; });   // sin lista de cercanos se puede seguir trabajando
+    }
+
+    // Nombre para mostrar: desde la 035 una entrega puede no tener nombre y valer igual,
+    // porque se identifica por su coordenada.
+    function nombreDeMarca(m) {
+        return m.taller_nombre || 'Taller sin nombre';
     }
 
     function avisarRepetido(marcas) {
         var caja = document.getElementById('aviso-repetido');
         var mismo = marcas.filter(function (m) { return m.distancia <= METROS_MISMO_LOCAL; });
-        if (mismo.length === 0) { caja.classList.add('hidden'); return; }
+        if (mismo.length === 0) { caja.classList.add('hidden'); return []; }
 
         var m = mismo[0];
         document.getElementById('detalle-repetido').textContent =
-            m.taller_nombre + ' — a ' + distanciaLegible(m.distancia) + ', marcado el '
+            nombreDeMarca(m) + ' — a ' + distanciaLegible(m.distancia) + ', marcado el '
             + fechaCorta(m.creado_en) + (m.mia ? ' por vos.' : ' por otro repartidor.')
-            + (mismo.length > 1 ? ' (y ' + (mismo.length - 1) + ' más al lado)' : '')
-            + ' Si igual es otro local, podés guardar.';
+            + (mismo.length > 1 ? ' (y ' + (mismo.length - 1) + ' más al lado)' : '');
         caja.classList.remove('hidden');
+        return mismo;
     }
 
     function pintarCerca(marcas) {
@@ -412,7 +529,7 @@
             izq.className = 'flex-1 min-w-0';
             var nom = document.createElement('p');
             nom.className = 'text-sm font-bold text-white truncate';
-            nom.textContent = m.taller_nombre;      // lo escribió otro repartidor: textContent
+            nom.textContent = nombreDeMarca(m);     // lo escribió otro repartidor: textContent
             izq.appendChild(nom);
             var sub = document.createElement('p');
             sub.className = 'text-xs text-gray-500';
@@ -473,7 +590,7 @@
 
             var nombre = document.createElement('p');
             nombre.className = 'text-sm font-bold text-white';
-            nombre.textContent = e.taller_nombre;   // textContent: lo escribió él en la calle
+            nombre.textContent = nombreDeMarca(e);  // textContent: lo escribió él en la calle
 
             var fecha = document.createElement('span');
             fecha.className = 'text-xs text-gray-600 shrink-0';
@@ -539,18 +656,27 @@
         });
     }
 
-    form.addEventListener('submit', function (ev) {
-        ev.preventDefault();
+    // Único camino de guardado, lo usan el botón grande y el formulario de datos.
+    // Toma lo que haya: la ubicación si se marcó, los campos si se completaron.
+    function registrar() {
         var cuerpo = { action: 'entrega_registrar', token: token };
         for (var clave in campos) {
-            cuerpo[clave] = document.getElementById(campos[clave]).value;
+            var v = document.getElementById(campos[clave]).value;
+            if (v && v.trim()) cuerpo[clave] = v;
         }
-        if (!cuerpo.taller_nombre.trim()) return;
-
         if (punto) {
             cuerpo.lat = punto.lat;
             cuerpo.lng = punto.lng;
             cuerpo.precision_m = punto.precision;
+        }
+
+        // Lo único que no sirve: ni ubicación ni nombre. Lo repite el CHECK de la base.
+        if (!punto && !cuerpo.taller_nombre) {
+            elAviso.textContent = 'Marcá la ubicación, o escribí el nombre del taller.';
+            elAviso.className = 'text-center text-xs mt-2 text-red-400';
+            elAviso.classList.remove('hidden');
+            document.getElementById('form-entrega').classList.remove('hidden');
+            return Promise.resolve();
         }
 
         // Identificador propio ANTES de mandarla: si esta entrega termina en la cola y se
@@ -559,45 +685,46 @@
             if (window.crypto && crypto.randomUUID) cuerpo.cliente_uuid = crypto.randomUUID();
         } catch (e) { /* sin randomUUID se manda sin identificador */ }
 
+        btnRegistrar.disabled = true;
         btn.disabled = true;
-        btn.textContent = 'Guardando…';
         elAviso.classList.add('hidden');
 
         // Deja la pantalla lista para el próximo taller. Se hace igual haya ido al servidor
         // o a la cola: para él la entrega ya está tomada, y lo que no puede pasar es que
         // tenga que reescribirla.
         function listoParaElSiguiente(mensaje) {
+            btnRegistrar.disabled = false;
             btn.disabled = false;
-            btn.textContent = 'Guardar entrega';
             form.reset();
+            form.classList.add('hidden');
             elAviso.textContent = mensaje;
-            elAviso.className = 'text-center text-xs text-bhGreen';
+            elAviso.className = 'text-center text-xs mt-2 text-bhGreen';
             elAviso.classList.remove('hidden');
 
             var estabaEn = punto;
             punto = null;
-            estadoGps.textContent = 'Marcá la ubicación parado en la puerta del próximo taller.';
+            estadoGps.textContent = 'Listo. En el próximo local, tocá el botón de nuevo.';
             document.getElementById('aviso-repetido').classList.add('hidden');
             return estabaEn;
         }
 
-        pedir(cuerpo).then(function (resp) {
+        return pedir(cuerpo).then(function (resp) {
             if (!resp || !resp.success) {
                 // El servidor contestó y rechazó: son datos malos, encolarlo no lo arregla.
+                btnRegistrar.disabled = false;
                 btn.disabled = false;
-                btn.textContent = 'Guardar entrega';
-                elAviso.textContent = (resp && resp.error) || 'No se pudo guardar.';
-                elAviso.className = 'text-center text-xs text-red-400';
+                elAviso.textContent = (resp && resp.error) || 'No se pudo registrar.';
+                elAviso.className = 'text-center text-xs mt-2 text-red-400';
                 elAviso.classList.remove('hidden');
                 return;
             }
             var estabaEn = listoParaElSiguiente(
-                cuerpo.lat ? 'Entrega guardada con ubicación.' : 'Entrega guardada (sin ubicación).');
+                cuerpo.lat ? 'Taller registrado con ubicación.' : 'Taller registrado.');
 
             // Los cercanos se recargan desde donde estaba, para que la marca nueva aparezca.
             if (estabaEn) {
                 punto = estabaEn;
-                cargarCerca().then(function () { punto = null; });
+                cargarCerca(false).then(function () { punto = null; });
             }
             return cargar();
         }).catch(function () {
@@ -605,8 +732,13 @@
             var lista = leerCola();
             lista.push(cuerpo);
             escribirCola(lista);
-            listoParaElSiguiente('Sin señal: quedó guardada en tu celular y se sube sola.');
+            listoParaElSiguiente('Sin señal: quedó guardado en tu celular y se sube solo.');
         });
+    }
+
+    form.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        registrar();
     });
 
     if (!token) {

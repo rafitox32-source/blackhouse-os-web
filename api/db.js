@@ -419,18 +419,20 @@ module.exports = async (req, res) => {
       }
 
       if (action === 'entrega_registrar') {
-        const taller = textoLimpio(req.body.taller_nombre, 120);
-        if (!taller) {
-          return res.status(400).json({ error: 'Falta el nombre del taller.' });
-        }
-
-        // Latitud y longitud van juntas o no van: una sola no ubica nada. Si el repartidor
-        // no dio permiso de ubicación, la entrega se guarda igual — registrar el taller es
-        // lo importante, la coordenada es una mejora.
+        // Latitud y longitud van juntas o no van: una sola no ubica nada.
         const lat = coordenada(req.body.lat, 90);
         const lng = coordenada(req.body.lng, 180);
         const hayPunto = lat !== null && lng !== null;
         const prec = Number(req.body.precision_m);
+
+        // El nombre es opcional desde la 035: en moto no hay tiempo de escribirlo, y con la
+        // coordenada se ubica el local igual. Lo único que no se acepta es una entrega sin
+        // nombre Y sin punto, porque no se podría ni ubicar ni identificar (lo repite el
+        // CHECK entregas_nombre_o_punto_check en la base).
+        const taller = textoLimpio(req.body.taller_nombre, 120);
+        if (!taller && !hayPunto) {
+          return res.status(400).json({ error: 'Marcá la ubicación, o escribí el nombre del taller.' });
+        }
 
         const { data: creada, error: errIns } = await supabase
           .from('entregas')

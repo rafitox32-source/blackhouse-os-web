@@ -388,7 +388,9 @@
             var tdTaller = celda(fila, null);
             var pt = document.createElement('p');
             pt.className = 'font-bold text-white';
-            pt.textContent = e.taller_nombre;
+            // Desde la 035 el nombre es opcional: el local se identifica por su coordenada.
+            pt.textContent = e.taller_nombre || 'Taller sin nombre';
+            if (!e.taller_nombre) pt.className = 'font-bold text-gray-500 italic';
             tdTaller.appendChild(pt);
             var sub = [e.distrito, e.direccion].filter(Boolean).join(' · ');
             if (sub) {
