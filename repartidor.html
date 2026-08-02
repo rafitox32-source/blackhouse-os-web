@@ -50,7 +50,7 @@
             <p class="text-gray-500 text-xs uppercase tracking-wider mb-1">BlackHouse OS</p>
             <h1 id="saludo" class="text-2xl font-black text-white"></h1>
             <p class="text-gray-500 text-sm mt-1">
-                Tu código es <span id="mi-codigo" class="text-bhPurple font-bold"></span>.
+                Cuando el taller escanee el QR, tiene que elegirte a vos en la lista.
             </p>
         </header>
 
@@ -332,7 +332,6 @@
 
     function pintar(datos) {
         document.getElementById('saludo').textContent = 'Hola, ' + datos.repartidor.nombre;
-        document.getElementById('mi-codigo').textContent = datos.repartidor.codigo;
 
         // El guion se arma con el precio real que manda el servidor, no con uno escrito
         // a mano acá: si cambia la promo, cambia solo y nadie sale a ofrecer un precio viejo.
@@ -340,8 +339,8 @@
         var promo = datos.repartidor.precio_promo;
         document.getElementById('guion').textContent =
             (promo && lista && promo < lista)
-                ? '«Escaneá el QR de la tarjeta y elegime en la lista: con mi código el sistema '
-                  + 'te sale ' + soles(promo) + ' al año en vez de ' + soles(lista) + '.»'
+                ? '«Escaneá el QR de la tarjeta. Cuando te pregunte quién te la dio, elegime a mí: '
+                  + 'así el sistema te sale ' + soles(promo) + ' al año en vez de ' + soles(lista) + '.»'
                 : '«Escaneá el QR de la tarjeta y elegime a mí en la lista cuando te pregunte '
                   + 'quién te la dio.»';
 

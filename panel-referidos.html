@@ -88,11 +88,7 @@
                            class="bg-black/40 border border-gray-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:border-bhPurple focus:outline-none">
                     <input id="n-publico" type="text" maxlength="60" placeholder="Cómo lo ve el cliente (ej. Juan P. — Gamarra)"
                            class="bg-black/40 border border-gray-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:border-bhPurple focus:outline-none">
-                    <input id="n-codigo" type="text" required maxlength="16" placeholder="Código * (ej. JUAN01)"
-                           class="bg-black/40 border border-gray-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:border-bhPurple focus:outline-none uppercase">
                     <input id="n-telefono" type="tel" maxlength="40" placeholder="Teléfono"
-                           class="bg-black/40 border border-gray-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:border-bhPurple focus:outline-none">
-                    <input id="n-zona" type="text" maxlength="80" placeholder="Zona"
                            class="bg-black/40 border border-gray-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:border-bhPurple focus:outline-none">
                     <input id="n-pct" type="number" min="0" max="100" step="0.5" value="30" placeholder="% comisión (sobre el precio de lista)"
                            class="bg-black/40 border border-gray-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:border-bhPurple focus:outline-none">
@@ -106,7 +102,9 @@
                     <p id="aviso-nuevo" class="text-xs hidden"></p>
                 </div>
                 <p class="text-gray-600 text-xs mt-3">
-                    El código va escrito en el WhatsApp del cliente, así que no se puede cambiar después. Solo letras y números.
+                    «Cómo lo ve el cliente» es el nombre que aparece en la lista al escanear la tarjeta, y el que
+                    te va a llegar escrito en el WhatsApp. Si lo dejás vacío se usa el nombre completo.
+                    No hace falta cargarle una zona: las zonas salen solas de los talleres donde vaya registrando.
                 </p>
             </form>
 
@@ -115,7 +113,7 @@
                     <thead class="text-gray-500 text-xs uppercase border-b border-gray-800">
                         <tr>
                             <th class="text-left font-medium px-4 py-3">Repartidor</th>
-                            <th class="text-left font-medium px-4 py-3">Código</th>
+                            <th class="text-left font-medium px-4 py-3">Zonas donde estuvo</th>
                             <th class="text-right font-medium px-4 py-3">Da precio</th>
                             <th class="text-right font-medium px-4 py-3">Talleres</th>
                             <th class="text-right font-medium px-4 py-3">Escaneos</th>
@@ -272,7 +270,7 @@
             pn.className = 'font-bold text-white';
             pn.textContent = r.nombre;
             tdNombre.appendChild(pn);
-            var detalle = [r.zona, r.telefono].filter(Boolean).join(' · ');
+            var detalle = r.telefono || '';
             if (detalle || !r.activo) {
                 var ps = document.createElement('p');
                 ps.className = 'text-xs text-gray-500';
@@ -280,7 +278,19 @@
                 tdNombre.appendChild(ps);
             }
 
-            celda(fila, r.codigo, 'font-mono text-bhPurple');
+            // Las zonas NO son un campo que se carga a mano: se sacan de los distritos donde
+            // realmente registró entregas. Un motorizado se mueve, así que fijarle una zona
+            // al darlo de alta era adivinar (migración 033).
+            var zonas = [];
+            for (var z = 0; z < datos.entregas.length; z++) {
+                var e = datos.entregas[z];
+                if (e.repartidor_id === r.id && e.distrito && zonas.indexOf(e.distrito) === -1) {
+                    zonas.push(e.distrito);
+                }
+            }
+            var tdZonas = celda(fila, null, 'text-gray-300 text-xs');
+            tdZonas.textContent = zonas.length ? zonas.slice(0, 4).join(', ') : '—';
+            if (zonas.length > 4) tdZonas.textContent += ' +' + (zonas.length - 4);
 
             var tdPromo = celda(fila, null, 'text-right');
             var pPromo = document.createElement('p');
@@ -544,9 +554,7 @@
             action: 'referido_guardar',
             nombre: document.getElementById('n-nombre').value,
             nombre_publico: document.getElementById('n-publico').value,
-            codigo: document.getElementById('n-codigo').value,
             telefono: document.getElementById('n-telefono').value,
-            zona: document.getElementById('n-zona').value,
             comision_pct: document.getElementById('n-pct').value,
             descuento_pct: document.getElementById('n-desc').value
         }).then(function (resp) {

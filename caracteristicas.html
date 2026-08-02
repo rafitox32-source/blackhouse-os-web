@@ -377,14 +377,14 @@
 
         // Le pega el código del repartidor al mensaje que ya trae el enlace, para que llegue
         // escrito en el chat. Eso es lo que sobrevive el salto a la app de WhatsApp.
-        function urlConCodigo(enlace, codigo, precioPromo) {
-            if (!codigo) return enlace.href;
+        function urlConReferido(enlace, nombre, precioPromo) {
+            if (!nombre) return enlace.href;
             try {
                 var u = new URL(enlace.href);
                 // El precio va en el mensaje a propósito: deja por escrito qué le
                 // prometieron al cliente, así no hay discusión después.
-                var etiqueta = precioPromo ? codigo + ' — promo ' + soles(precioPromo) : codigo;
-                var texto = (u.searchParams.get('text') || 'Hola') + ' (tarjeta: ' + etiqueta + ')';
+                var etiqueta = precioPromo ? nombre + ' — promo ' + soles(precioPromo) : nombre;
+                var texto = (u.searchParams.get('text') || 'Hola') + ' (me la dio: ' + etiqueta + ')';
 
                 // Se arma a mano y NO con searchParams.toString(): ese serializa los
                 // espacios como "+", y WhatsApp los muestra literales en el mensaje
@@ -463,7 +463,7 @@
             // Perder la atribución de un lead es barato; perder al cliente no.
             pedir({ action: 'referido_lead', repartidor_id: id, visitante: visitante() })
                 .then(function (resp) {
-                    window.location.href = urlConCodigo(enlace, resp && resp.codigo, resp && resp.precio_promo);
+                    window.location.href = urlConReferido(enlace, resp && resp.nombre, resp && resp.precio_promo);
                 })
                 .catch(function () {
                     window.location.href = enlace.href;

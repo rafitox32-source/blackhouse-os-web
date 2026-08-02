@@ -327,8 +327,8 @@ module.exports = async (req, res) => {
     }
 
     // --- REFERIDOS: lista para el paso "¿quién te dio la tarjeta?" (publica) ---
-    // Solo id y nombre_publico. Ni el telefono, ni el codigo, ni el token personal: esta
-    // lista la ve cualquiera que abra caracteristicas.html.
+    // Solo id y nombre_publico. Ni el telefono ni el token personal: esta lista la ve
+    // cualquiera que abra caracteristicas.html.
     if (action === 'referidos_lista') {
       const { data, error } = await supabase
         .from('repartidores')
@@ -347,10 +347,11 @@ module.exports = async (req, res) => {
       return res.status(200).json({ success: true, data: lista, precio_lista: PRECIO_LISTA_ANUAL });
     }
 
-    // --- REFERIDOS: registrar el lead y devolver el codigo para el WhatsApp (publica) ---
-    // El codigo viaja despues en el texto pre-llenado del mensaje. Ese es el truco que
+    // --- REFERIDOS: registrar el lead y devolver el nombre para el WhatsApp (publica) ---
+    // El nombre viaja despues en el texto pre-llenado del mensaje. Ese es el truco que
     // hace que la atribucion sobreviva el salto a la app de WhatsApp, donde se pierden
-    // cookies y sesiones.
+    // cookies y sesiones. (Antes viajaba un codigo tipo JUAN01; se saco en la 033 porque
+    // el nombre se lee mejor en el chat y la atribucion real la hace leads.repartidor_id.)
     if (action === 'referido_lead') {
       const { repartidor_id, visitante } = req.body;
       const visitanteOk = (typeof visitante === 'string' && RE_UUID.test(visitante)) ? visitante : null;
@@ -364,7 +365,7 @@ module.exports = async (req, res) => {
         if (errAnon && errAnon.code !== '23505') {
           return res.status(400).json({ error: errAnon.message });
         }
-        return res.status(200).json({ success: true, codigo: null, nombre: null });
+        return res.status(200).json({ success: true, nombre: null });
       }
 
       const idRepartidor = Number(repartidor_id);
@@ -374,7 +375,7 @@ module.exports = async (req, res) => {
 
       const { data: rep, error: errRep } = await supabase
         .from('repartidores')
-        .select('id, codigo, nombre_publico, descuento_pct')
+        .select('id, nombre_publico, descuento_pct')
         .eq('id', idRepartidor)
         .eq('activo', true)
         .single();
@@ -393,7 +394,6 @@ module.exports = async (req, res) => {
 
       return res.status(200).json({
         success: true,
-        codigo: rep.codigo,
         nombre: rep.nombre_publico,
         precio_lista: PRECIO_LISTA_ANUAL,
         precio_promo: precioConDescuento(rep.descuento_pct),
@@ -411,7 +411,7 @@ module.exports = async (req, res) => {
 
       const { data: rep, error: errRep } = await supabase
         .from('repartidores')
-        .select('id, nombre_publico, codigo, comision_pct, descuento_pct, activo')
+        .select('id, nombre_publico, comision_pct, descuento_pct, activo')
         .eq('token', tokenRep)
         .single();
       if (errRep || !rep || !rep.activo) {
@@ -511,7 +511,6 @@ module.exports = async (req, res) => {
         success: true,
         repartidor: {
           nombre: rep.nombre_publico,
-          codigo: rep.codigo,
           comision_pct: rep.comision_pct,
           precio_lista: PRECIO_LISTA_ANUAL,
           precio_promo: precioConDescuento(rep.descuento_pct),
@@ -536,13 +535,13 @@ module.exports = async (req, res) => {
 
       if (action === 'referido_guardar') {
         const nombre = textoLimpio(req.body.nombre, 120);
+        // Si no se completa "cómo lo ve el cliente", se usa el nombre a secas. Sirve para
+        // desempatar dos Juanes o para mostrar algo más corto que el nombre completo.
         const nombrePublico = textoLimpio(req.body.nombre_publico, 60) || nombre;
-        const codigo = (textoLimpio(req.body.codigo, 16) || '').toUpperCase();
         const pct = Number(req.body.comision_pct);
 
         const campos = {
           telefono: textoLimpio(req.body.telefono, 40),
-          zona: textoLimpio(req.body.zona, 80),
           activo: req.body.activo !== false,
         };
         if (nombre) campos.nombre = nombre;
@@ -555,8 +554,6 @@ module.exports = async (req, res) => {
         if (Number.isFinite(desc) && desc >= 0 && desc <= 90) campos.descuento_pct = desc;
 
         if (req.body.id) {
-          // Al editar, el codigo no se toca: ya salio impreso en mensajes de WhatsApp y
-          // esta apuntado en leads viejos. Cambiarlo rompe el rastro hacia atras.
           const { data, error } = await supabase
             .from('repartidores').update(campos).eq('id', Number(req.body.id)).select('id').single();
           if (error) return res.status(400).json({ error: error.message });
@@ -564,15 +561,9 @@ module.exports = async (req, res) => {
         }
 
         if (!campos.nombre) return res.status(400).json({ error: 'Falta el nombre.' });
-        if (!/^[A-Z0-9]{2,16}$/.test(codigo)) {
-          return res.status(400).json({ error: 'El código debe ser de 2 a 16 letras o números, sin espacios ni tildes.' });
-        }
         const { data, error } = await supabase
-          .from('repartidores').insert([{ ...campos, codigo }]).select('id, token').single();
-        if (error) {
-          if (error.code === '23505') return res.status(400).json({ error: `El código "${codigo}" ya está usado por otro repartidor.` });
-          return res.status(400).json({ error: error.message });
-        }
+          .from('repartidores').insert([campos]).select('id, token').single();
+        if (error) return res.status(400).json({ error: error.message });
         return res.status(200).json({ success: true, id: data.id, token: data.token });
       }
 
@@ -645,7 +636,7 @@ module.exports = async (req, res) => {
       // referidos_panel: todo lo que necesita la pantalla, en un solo viaje.
       const [repartidores, entregas, leads, licencias] = await Promise.all([
         supabase.from('repartidores')
-          .select('id, nombre, nombre_publico, telefono, zona, codigo, token, comision_pct, descuento_pct, activo, creado_en')
+          .select('id, nombre, nombre_publico, telefono, token, comision_pct, descuento_pct, activo, creado_en')
           .order('activo', { ascending: false }).order('nombre', { ascending: true }),
         supabase.from('entregas')
           .select('id, repartidor_id, taller_nombre, distrito, direccion, contacto, telefono, lat, lng, precision_m, creado_en')
