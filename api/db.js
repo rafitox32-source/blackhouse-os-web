@@ -518,6 +518,14 @@ module.exports = async (req, res) => {
         return res.status(200).json({ success: true, id: data.id, token: data.token });
       }
 
+      // La comision se paga UNA SOLA VEZ, en la primera venta de ese taller: las
+      // renovaciones no generan comision (decision del dueño, 2026-08-02). No hace falta
+      // codigo para impedirlo: renovar va por licencia_actualizar(), que solo mueve
+      // empresas.fecha_de_vencimiento y nunca inserta en `licencias`, que es donde vive la
+      // comision. El unico modo de pagar dos veces es emitir un codigo nuevo para una
+      // renovacion y asignarle un repartidor a mano — por eso el panel lo avisa. Detectarlo
+      // automaticamente no se puede: `licencias` no tiene ninguna columna que la ate a la
+      // empresa que la usó.
       if (action === 'licencia_referido') {
         const licenciaId = Number(req.body.licencia_id);
         if (!Number.isInteger(licenciaId) || licenciaId <= 0) {
