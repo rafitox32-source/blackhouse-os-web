@@ -90,6 +90,25 @@
             <h2 class="text-white font-bold mb-1">Registrar una entrega</h2>
             <p class="text-gray-400 text-xs mb-4">Anotá cada taller donde dejes tarjeta. Con el nombre alcanza; lo demás ayuda pero es opcional.</p>
 
+            <!-- Ubicación: se pide cuando él la toca, no al abrir la página -->
+            <div class="bg-black/30 border border-gray-800 rounded-xl p-3 mb-3">
+                <button id="btn-ubicar" type="button"
+                        class="w-full bg-bhPurple hover:bg-bhPurpleHover text-white font-bold px-4 py-2.5 rounded-lg text-sm transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-location-crosshairs"></i> Marcar mi ubicación
+                </button>
+                <p id="estado-gps" class="text-xs text-gray-500 mt-2 text-center">
+                    Marcá la ubicación parado en la puerta del taller.
+                </p>
+            </div>
+
+            <!-- Aviso de local ya visitado -->
+            <div id="aviso-repetido" class="hidden bg-yellow-500/10 border border-yellow-500/40 rounded-xl p-3 mb-3">
+                <p class="text-yellow-300 text-sm font-bold mb-1">
+                    <i class="fa-solid fa-triangle-exclamation mr-1"></i> Acá ya se dejó tarjeta
+                </p>
+                <p id="detalle-repetido" class="text-yellow-200/80 text-xs"></p>
+            </div>
+
             <form id="form-entrega" class="space-y-3">
                 <input id="f-taller" type="text" required maxlength="120" placeholder="Nombre del taller *"
                        class="w-full bg-black/40 border border-gray-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:border-bhPurple focus:outline-none">
@@ -112,6 +131,18 @@
                 </button>
                 <p id="aviso" class="text-center text-xs hidden"></p>
             </form>
+        </section>
+
+        <!-- Marcas cercanas, de todos los repartidores -->
+        <section id="seccion-cerca" class="hidden mb-7">
+            <h2 class="text-white font-bold mb-1 text-sm uppercase tracking-wide">Ya marcados cerca</h2>
+            <p class="text-gray-500 text-xs mb-3">
+                Locales donde ya se dejó tarjeta, tuyos y de los demás. Si está en la lista, no hace falta repetir.
+            </p>
+            <div id="listado-cerca" class="space-y-2"></div>
+            <p id="sin-cerca" class="text-gray-600 text-sm text-center py-6 hidden">
+                Nadie marcó nada cerca de acá. Zona libre.
+            </p>
         </section>
 
         <!-- Sus entregas -->
@@ -142,6 +173,14 @@
         direccion: 'f-direccion', contacto: 'f-contacto', notas: 'f-notas'
     };
 
+    // Dónde está parado ahora, si marcó ubicación. null = no marcó o no dio permiso.
+    var punto = null;
+
+    // A cuántos metros se considera "el mismo local". El GPS de un celular en calle con
+    // edificios suele errar 20-50 m, así que menos de esto daría falsos negativos (avisar
+    // que no hay nada cuando sí lo hay) y mucho más marcaría al vecino de al lado.
+    var METROS_MISMO_LOCAL = 60;
+
     function pedir(cuerpo) {
         return fetch('/api/db', {
             method: 'POST',
@@ -165,6 +204,130 @@
         try {
             return new Date(iso).toLocaleDateString('es-PE', { day: '2-digit', month: 'short' });
         } catch (e) { return ''; }
+    }
+
+    // --- Ubicación ---------------------------------------------------------
+
+    // Distancia en metros entre dos coordenadas (fórmula del semiverseno). Se calcula acá
+    // y no en la base: el servidor manda las marcas de una caja de ~1,5 km y son pocas.
+    function metros(a, b) {
+        var R = 6371000;
+        var rad = Math.PI / 180;
+        var dLat = (b.lat - a.lat) * rad;
+        var dLng = (b.lng - a.lng) * rad;
+        var h = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+              + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        return Math.round(2 * R * Math.asin(Math.min(1, Math.sqrt(h))));
+    }
+
+    function distanciaLegible(m) {
+        return m < 1000 ? m + ' m' : (m / 1000).toFixed(1) + ' km';
+    }
+
+    var estadoGps = document.getElementById('estado-gps');
+    var btnUbicar = document.getElementById('btn-ubicar');
+
+    btnUbicar.addEventListener('click', function () {
+        if (!navigator.geolocation) {
+            estadoGps.textContent = 'Este celular no permite ubicación. Podés guardar igual, sin marcarla.';
+            return;
+        }
+        btnUbicar.disabled = true;
+        estadoGps.textContent = 'Buscando señal…';
+
+        navigator.geolocation.getCurrentPosition(function (pos) {
+            btnUbicar.disabled = false;
+            punto = {
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude,
+                precision: Math.round(pos.coords.accuracy || 0)
+            };
+            estadoGps.innerHTML = '<span class="text-bhGreen font-bold">Ubicación marcada</span>'
+                                + ' · precisión ' + punto.precision + ' m';
+            if (punto.precision > 100) {
+                estadoGps.innerHTML += '<br><span class="text-yellow-400">Señal floja: puede errar de local. '
+                                     + 'Probá salir a la vereda y marcar de nuevo.</span>';
+            }
+            cargarCerca();
+        }, function (err) {
+            btnUbicar.disabled = false;
+            estadoGps.textContent = (err && err.code === 1)
+                ? 'No diste permiso de ubicación. Podés guardar la entrega igual, sin marcarla.'
+                : 'No se pudo tomar la ubicación. Podés guardar igual, sin marcarla.';
+        }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 });
+    });
+
+    function cargarCerca() {
+        if (!punto) return Promise.resolve();
+        return pedir({ action: 'entregas_cerca', token: token, lat: punto.lat, lng: punto.lng })
+            .then(function (resp) {
+                if (!resp || !resp.success) return;
+
+                // Se ordenan por distancia real: la caja del servidor es cuadrada, no redonda.
+                var marcas = (resp.marcas || []).map(function (m) {
+                    m.distancia = metros(punto, m);
+                    return m;
+                }).filter(function (m) {
+                    return m.distancia <= (resp.radio_m || 1500);
+                }).sort(function (a, b) { return a.distancia - b.distancia; });
+
+                pintarCerca(marcas);
+                avisarRepetido(marcas);
+            })
+            .catch(function () { /* sin lista de cercanos se puede seguir trabajando */ });
+    }
+
+    function avisarRepetido(marcas) {
+        var caja = document.getElementById('aviso-repetido');
+        var mismo = marcas.filter(function (m) { return m.distancia <= METROS_MISMO_LOCAL; });
+        if (mismo.length === 0) { caja.classList.add('hidden'); return; }
+
+        var m = mismo[0];
+        document.getElementById('detalle-repetido').textContent =
+            m.taller_nombre + ' — a ' + distanciaLegible(m.distancia) + ', marcado el '
+            + fechaCorta(m.creado_en) + (m.mia ? ' por vos.' : ' por otro repartidor.')
+            + (mismo.length > 1 ? ' (y ' + (mismo.length - 1) + ' más al lado)' : '')
+            + ' Si igual es otro local, podés guardar.';
+        caja.classList.remove('hidden');
+    }
+
+    function pintarCerca(marcas) {
+        var cont = document.getElementById('listado-cerca');
+        var seccion = document.getElementById('seccion-cerca');
+        seccion.classList.remove('hidden');
+        cont.innerHTML = '';
+        document.getElementById('sin-cerca').classList.toggle('hidden', marcas.length > 0);
+
+        for (var i = 0; i < marcas.length; i++) {
+            var m = marcas[i];
+            var fila = document.createElement('div');
+            fila.className = 'bg-bhCard border border-gray-800 rounded-xl px-4 py-3 flex items-center gap-3';
+
+            var izq = document.createElement('div');
+            izq.className = 'flex-1 min-w-0';
+            var nom = document.createElement('p');
+            nom.className = 'text-sm font-bold text-white truncate';
+            nom.textContent = m.taller_nombre;      // lo escribió otro repartidor: textContent
+            izq.appendChild(nom);
+            var sub = document.createElement('p');
+            sub.className = 'text-xs text-gray-500';
+            sub.textContent = distanciaLegible(m.distancia) + ' · ' + fechaCorta(m.creado_en)
+                            + (m.mia ? ' · tuyo' : '');
+            izq.appendChild(sub);
+            fila.appendChild(izq);
+
+            // Link a Maps en vez de un mapa embebido: no suma dependencias y en el celular
+            // abre la app de mapas, que es lo que él va a querer para caminar hasta ahí.
+            var ver = document.createElement('a');
+            ver.href = 'https://www.google.com/maps/search/?api=1&query=' + m.lat + ',' + m.lng;
+            ver.target = '_blank';
+            ver.rel = 'noopener';
+            ver.className = 'text-gray-400 hover:text-white border border-gray-700 rounded-lg px-3 py-1.5 text-xs shrink-0 transition';
+            ver.innerHTML = '<i class="fa-solid fa-map-location-dot"></i>';
+            fila.appendChild(ver);
+
+            cont.appendChild(fila);
+        }
     }
 
     function pintar(datos) {
@@ -223,6 +386,24 @@
                 p.textContent = detalle;
                 fila.appendChild(p);
             }
+
+            // Marca si quedó con ubicación, y link para volver a encontrar el local.
+            var pie = document.createElement('p');
+            pie.className = 'text-xs mt-1';
+            if (e.lat && e.lng) {
+                var a = document.createElement('a');
+                a.href = 'https://www.google.com/maps/search/?api=1&query=' + e.lat + ',' + e.lng;
+                a.target = '_blank';
+                a.rel = 'noopener';
+                a.className = 'text-bhPurple hover:underline';
+                a.innerHTML = '<i class="fa-solid fa-location-dot mr-1"></i>Ver en el mapa';
+                pie.appendChild(a);
+            } else {
+                pie.className += ' text-gray-600';
+                pie.textContent = 'Sin ubicación marcada';
+            }
+            fila.appendChild(pie);
+
             elListado.appendChild(fila);
         }
 
@@ -250,6 +431,12 @@
         }
         if (!cuerpo.taller_nombre.trim()) return;
 
+        if (punto) {
+            cuerpo.lat = punto.lat;
+            cuerpo.lng = punto.lng;
+            cuerpo.precision_m = punto.precision;
+        }
+
         btn.disabled = true;
         btn.textContent = 'Guardando…';
         elAviso.classList.add('hidden');
@@ -263,8 +450,21 @@
                 return;
             }
             form.reset();
-            elAviso.textContent = 'Entrega guardada.';
+            elAviso.textContent = punto ? 'Entrega guardada con ubicación.' : 'Entrega guardada (sin ubicación).';
             elAviso.className = 'text-center text-xs text-bhGreen';
+
+            // La ubicación se suelta después de guardar: el próximo taller es otra puerta.
+            // Si no, quedarían cinco talleres distintos con la misma coordenada.
+            var estabaEn = punto;
+            punto = null;
+            estadoGps.textContent = 'Marcá la ubicación parado en la puerta del próximo taller.';
+            document.getElementById('aviso-repetido').classList.add('hidden');
+
+            // Los cercanos se recargan desde donde estaba, para que la marca nueva aparezca.
+            if (estabaEn) {
+                punto = estabaEn;
+                cargarCerca().then(function () { punto = null; });
+            }
             return cargar();
         }).catch(function () {
             btn.disabled = false;

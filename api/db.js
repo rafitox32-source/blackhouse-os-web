@@ -116,6 +116,13 @@ function textoLimpio(valor, maximo) {
 
 const RE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// Coordenada que llega del navegador (migracion 032): solo se acepta si es un numero real
+// dentro de rango. Cualquier otra cosa vale null y la entrega se guarda sin ubicacion.
+function coordenada(valor, tope) {
+  const n = Number(valor);
+  return (Number.isFinite(n) && n >= -tope && n <= tope) ? n : null;
+}
+
 // --- PRECIO DE LISTA DE LA ANUALIDAD (migracion 030) ---
 // No hay tabla de precios en esta base: los S/400 viven en la documentacion comercial y
 // aca. Es el unico lugar del codigo donde esta el precio, y de el sale el precio
@@ -218,7 +225,7 @@ module.exports = async (req, res) => {
     // repartidor se validan con SU token uuid, igual que "pedido_accesorio" con el
     // tracking_token. Las del panel (referidos_panel, licencia_referido, comision_marcar)
     // NO estan aca a proposito: esas exigen JWT y ademas ser la casa matriz.
-    const ACCIONES_REFERIDOS_SIN_JWT = ['referidos_lista', 'referido_lead', 'entrega_registrar', 'entregas_mias'];
+    const ACCIONES_REFERIDOS_SIN_JWT = ['referidos_lista', 'referido_lead', 'entrega_registrar', 'entregas_mias', 'entregas_cerca'];
     const esAccionPublica = isPublicQuery
       || action === 'pedido_accesorio'
       || ACCIONES_REFERIDOS_SIN_JWT.includes(action);
@@ -396,7 +403,7 @@ module.exports = async (req, res) => {
     // --- REFERIDOS: lo del repartidor, validado con SU token uuid (link personal) ---
     // Mismo patron que "pedido_accesorio": sin usuario ni contraseña, el unico "acceso"
     // que demuestra es conocer su token. Todo lo que devuelve esta acotado a SU id.
-    if (action === 'entrega_registrar' || action === 'entregas_mias') {
+    if (action === 'entrega_registrar' || action === 'entregas_mias' || action === 'entregas_cerca') {
       const tokenRep = typeof req.body.token === 'string' ? req.body.token.trim() : '';
       if (!RE_UUID.test(tokenRep)) {
         return res.status(401).json({ error: 'Link inválido.' });
@@ -416,6 +423,15 @@ module.exports = async (req, res) => {
         if (!taller) {
           return res.status(400).json({ error: 'Falta el nombre del taller.' });
         }
+
+        // Latitud y longitud van juntas o no van: una sola no ubica nada. Si el repartidor
+        // no dio permiso de ubicación, la entrega se guarda igual — registrar el taller es
+        // lo importante, la coordenada es una mejora.
+        const lat = coordenada(req.body.lat, 90);
+        const lng = coordenada(req.body.lng, 180);
+        const hayPunto = lat !== null && lng !== null;
+        const prec = Number(req.body.precision_m);
+
         const { data: creada, error: errIns } = await supabase
           .from('entregas')
           .insert([{
@@ -426,17 +442,59 @@ module.exports = async (req, res) => {
             contacto: textoLimpio(req.body.contacto, 120),
             telefono: textoLimpio(req.body.telefono, 40),
             notas: textoLimpio(req.body.notas, 500),
+            lat: hayPunto ? lat : null,
+            lng: hayPunto ? lng : null,
+            precision_m: (hayPunto && Number.isFinite(prec) && prec >= 0) ? Math.round(prec) : null,
           }])
           .select('id')
           .single();
         if (errIns) return res.status(400).json({ error: errIns.message });
-        return res.status(200).json({ success: true, id: creada.id });
+        return res.status(200).json({ success: true, id: creada.id, con_ubicacion: hayPunto });
+      }
+
+      // --- Marcas cercanas, de TODOS los repartidores, para no repetir el mismo local ---
+      if (action === 'entregas_cerca') {
+        const lat = coordenada(req.body.lat, 90);
+        const lng = coordenada(req.body.lng, 180);
+        if (lat === null || lng === null) {
+          return res.status(400).json({ error: 'Falta la ubicación desde dónde buscar.' });
+        }
+        const radio = Math.min(Math.max(Number(req.body.radio_m) || 1500, 100), 20000);
+
+        // Caja de coordenadas alrededor del punto: un grado de latitud son ~111320 m, y en
+        // longitud el ancho se achica con el coseno de la latitud. La distancia exacta se
+        // calcula en el navegador sobre estas pocas filas (ver la 032: no hace falta PostGIS).
+        const dLat = radio / 111320;
+        const dLng = radio / (111320 * Math.max(Math.cos(lat * Math.PI / 180), 0.01));
+
+        const { data, error } = await supabase
+          .from('entregas')
+          .select('id, repartidor_id, taller_nombre, distrito, lat, lng, creado_en')
+          .not('lat', 'is', null)
+          .gte('lat', lat - dLat).lte('lat', lat + dLat)
+          .gte('lng', lng - dLng).lte('lng', lng + dLng)
+          .order('creado_en', { ascending: false })
+          .limit(300);
+        if (error) return res.status(400).json({ error: error.message });
+
+        // Lo que un repartidor ve de la marca de OTRO: dónde, qué taller y cuándo. NO el
+        // contacto, NO el teléfono y NO de quién es. Alcanza para no repetir el local sin
+        // entregarle a cada uno la agenda de clientes de los demás.
+        const marcas = (data || []).map(e => ({
+          taller_nombre: e.taller_nombre,
+          distrito: e.distrito,
+          lat: Number(e.lat),
+          lng: Number(e.lng),
+          creado_en: e.creado_en,
+          mia: e.repartidor_id === rep.id,
+        }));
+        return res.status(200).json({ success: true, marcas, radio_m: radio });
       }
 
       // entregas_mias: sus ultimas entregas y sus numeros. Nada de otros repartidores.
       const [listado, totalEntregas, totalLeads, licenciasSuyas] = await Promise.all([
         supabase.from('entregas')
-          .select('id, taller_nombre, distrito, direccion, contacto, telefono, creado_en')
+          .select('id, taller_nombre, distrito, direccion, contacto, telefono, lat, lng, creado_en')
           .eq('repartidor_id', rep.id).order('creado_en', { ascending: false }).limit(100),
         supabase.from('entregas').select('id', { count: 'exact', head: true }).eq('repartidor_id', rep.id),
         supabase.from('leads').select('id', { count: 'exact', head: true }).eq('repartidor_id', rep.id),
@@ -590,7 +648,7 @@ module.exports = async (req, res) => {
           .select('id, nombre, nombre_publico, telefono, zona, codigo, token, comision_pct, descuento_pct, activo, creado_en')
           .order('activo', { ascending: false }).order('nombre', { ascending: true }),
         supabase.from('entregas')
-          .select('id, repartidor_id, taller_nombre, distrito, direccion, contacto, telefono, creado_en')
+          .select('id, repartidor_id, taller_nombre, distrito, direccion, contacto, telefono, lat, lng, precision_m, creado_en')
           .order('creado_en', { ascending: false }).limit(500),
         supabase.from('leads')
           .select('id, repartidor_id, origen, creado_en')

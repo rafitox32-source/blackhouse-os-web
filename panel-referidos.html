@@ -133,6 +133,37 @@
             </p>
         </section>
 
+        <!-- Entregas con ubicación -->
+        <section>
+            <div class="flex items-center justify-between mb-1">
+                <h2 class="text-white font-bold text-sm uppercase tracking-wide">Talleres visitados</h2>
+                <label class="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+                    <input type="checkbox" id="solo-con-mapa" class="accent-bhPurple">
+                    Solo los que tienen ubicación
+                </label>
+            </div>
+            <p class="text-gray-500 text-xs mb-3">
+                Dónde estuvo cada repartidor. La ubicación la marca él con el GPS del celular, parado en la puerta.
+            </p>
+            <div class="overflow-x-auto bg-bhCard border border-gray-800 rounded-xl">
+                <table class="w-full text-sm min-w-[760px]">
+                    <thead class="text-gray-500 text-xs uppercase border-b border-gray-800">
+                        <tr>
+                            <th class="text-left font-medium px-4 py-3">Taller</th>
+                            <th class="text-left font-medium px-4 py-3">Quién fue</th>
+                            <th class="text-left font-medium px-4 py-3">Contacto</th>
+                            <th class="text-left font-medium px-4 py-3">Cuándo</th>
+                            <th class="text-right font-medium px-4 py-3">Mapa</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-entregas"></tbody>
+                </table>
+            </div>
+            <p id="sin-entregas" class="text-gray-600 text-sm text-center py-8 hidden">
+                Todavía no hay entregas registradas.
+            </p>
+        </section>
+
         <!-- Licencias -->
         <section>
             <h2 class="text-white font-bold text-sm uppercase tracking-wide mb-1">Licencias y comisiones</h2>
@@ -288,6 +319,67 @@
         }
     }
 
+    // --- Entregas -----------------------------------------------------------
+    function pintarEntregas() {
+        var tbl = document.getElementById('tabla-entregas');
+        var soloMapa = document.getElementById('solo-con-mapa').checked;
+        tbl.innerHTML = '';
+
+        var filas = (datos.entregas || []).filter(function (e) {
+            return !soloMapa || (e.lat && e.lng);
+        });
+        document.getElementById('sin-entregas').classList.toggle('hidden', filas.length > 0);
+
+        for (var i = 0; i < filas.length; i++) {
+            var e = filas[i];
+            var rep = datos.repartidores.find(function (r) { return r.id === e.repartidor_id; });
+
+            var fila = document.createElement('tr');
+            fila.className = 'border-b border-gray-800/60 last:border-0';
+
+            var tdTaller = celda(fila, null);
+            var pt = document.createElement('p');
+            pt.className = 'font-bold text-white';
+            pt.textContent = e.taller_nombre;
+            tdTaller.appendChild(pt);
+            var sub = [e.distrito, e.direccion].filter(Boolean).join(' · ');
+            if (sub) {
+                var ps = document.createElement('p');
+                ps.className = 'text-xs text-gray-500';
+                ps.textContent = sub;
+                tdTaller.appendChild(ps);
+            }
+
+            celda(fila, rep ? rep.nombre : '—', 'text-gray-300');
+            celda(fila, [e.contacto, e.telefono].filter(Boolean).join(' · ') || '—', 'text-gray-400 text-xs');
+            celda(fila, fecha(e.creado_en), 'text-gray-500 text-xs');
+
+            var tdMapa = celda(fila, null, 'text-right');
+            if (e.lat && e.lng) {
+                var a = document.createElement('a');
+                a.href = 'https://www.google.com/maps/search/?api=1&query=' + e.lat + ',' + e.lng;
+                a.target = '_blank';
+                a.rel = 'noopener';
+                a.className = 'text-xs text-gray-400 hover:text-white border border-gray-700 hover:border-gray-500 rounded-lg px-3 py-1.5 transition inline-block';
+                a.innerHTML = '<i class="fa-solid fa-map-location-dot mr-1"></i>Ver';
+                tdMapa.appendChild(a);
+                if (e.precision_m > 100) {
+                    // Un punto con mucho error no distingue un local de su vecino.
+                    var av = document.createElement('p');
+                    av.className = 'text-xs text-yellow-500/70 mt-0.5';
+                    av.textContent = '±' + Math.round(e.precision_m) + ' m';
+                    tdMapa.appendChild(av);
+                }
+            } else {
+                tdMapa.textContent = 'sin marcar';
+                tdMapa.className += ' text-gray-700 text-xs';
+            }
+
+            tbl.appendChild(fila);
+        }
+    }
+    document.getElementById('solo-con-mapa').addEventListener('change', pintarEntregas);
+
     // --- Licencias ----------------------------------------------------------
     function pintarLicencias() {
         tblLic.innerHTML = '';
@@ -404,6 +496,7 @@
             datos = resp;
             pintarResumen();
             pintarRepartidores();
+            pintarEntregas();
             pintarLicencias();
             actualizarCuenta();   // ya se sabe el precio de lista
             elCarga.classList.add('hidden');
