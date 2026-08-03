@@ -129,7 +129,38 @@
                 <p class="text-red-300 text-sm font-bold mb-2">
                     <i class="fa-solid fa-location-dot mr-1"></i> El celular no está dando la ubicación
                 </p>
-                <div id="texto-permiso" class="text-red-200/80 text-xs space-y-2"></div>
+                <div id="texto-permiso" class="text-red-200/80 text-xs space-y-2 mb-3"></div>
+                <div id="acciones-permiso" class="flex flex-col gap-2"></div>
+            </div>
+
+            <!-- Diálogo propio ANTES del cartel real del navegador.
+                 Ojo: esto NO es el permiso. El cartel de permiso lo dibuja el navegador y
+                 ninguna página puede crearlo ni volver a lanzarlo. Esto solo explica para
+                 qué se va a pedir, para que no toque «Bloquear» por reflejo — que es
+                 irreversible desde acá. Solo se muestra si el permiso está sin decidir. -->
+            <div id="modal-permiso" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                <div class="bg-bhCard border border-gray-800 rounded-2xl w-full max-w-sm p-6 shadow-2xl">
+                    <div class="text-center mb-4">
+                        <i class="fa-solid fa-location-crosshairs text-bhGreen text-3xl mb-3"></i>
+                        <h3 class="text-white font-black text-lg">Activar la ubicación</h3>
+                    </div>
+                    <p class="text-gray-300 text-sm mb-3">
+                        Ahora el celular te va a preguntar si permitís la ubicación.
+                        Tocá <strong class="text-bhGreen">Permitir</strong>.
+                    </p>
+                    <p class="text-gray-500 text-xs mb-5">
+                        Se usa para marcar en qué local dejaste la tarjeta y para avisarte si otro
+                        repartidor ya pasó por ahí. No se registra dónde estás cuando no marcás.
+                    </p>
+                    <button id="btn-pedir-permiso" type="button"
+                            class="w-full bg-bhGreen text-black font-extrabold px-5 py-3 rounded-xl hover:opacity-90 transition text-sm">
+                        Entendido, activar
+                    </button>
+                    <button id="btn-permiso-luego" type="button"
+                            class="w-full text-gray-500 hover:text-gray-300 text-xs mt-3 transition">
+                        Ahora no, lo cargo con el nombre
+                    </button>
+                </div>
             </div>
 
             <!-- Aviso de local ya visitado -->
@@ -366,36 +397,125 @@
         if (!navigator.geolocation) return Promise.resolve('no-soportado');
         if (!navigator.permissions || !navigator.permissions.query) return Promise.resolve('preguntar');
         return navigator.permissions.query({ name: 'geolocation' })
-            .then(function (p) { return p.state === 'denied' ? 'bloqueado' : 'preguntar'; })
+            .then(function (p) {
+                if (p.state === 'denied') return 'bloqueado';
+                if (p.state === 'granted') return 'ya-esta';   // no se le explica nada, va directo
+                return 'preguntar';
+            })
             .catch(function () { return 'preguntar'; });
+    }
+
+    // Explica para qué se pide, ANTES de que aparezca el cartel del navegador. No reemplaza
+    // al cartel — ninguna página puede dibujar ese — pero evita que lo bloquee de reflejo,
+    // que es lo que no tiene vuelta atrás desde acá.
+    var CLAVE_AVISADO = 'bh_aviso_permiso';
+
+    function avisarAntesDePedir() {
+        var yaAvisado = false;
+        try { yaAvisado = localStorage.getItem(CLAVE_AVISADO) === '1'; } catch (e) { }
+        if (yaAvisado) return Promise.resolve(true);
+
+        var modal = document.getElementById('modal-permiso');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        return new Promise(function (resolver) {
+            function cerrar(seguir) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                // Solo se marca cuando aceptó: si dijo "ahora no", la próxima vez que toque
+                // el botón conviene volver a explicárselo.
+                if (seguir) { try { localStorage.setItem(CLAVE_AVISADO, '1'); } catch (e) { } }
+                resolver(seguir);
+            }
+            document.getElementById('btn-pedir-permiso').onclick = function () { cerrar(true); };
+            document.getElementById('btn-permiso-luego').onclick = function () { cerrar(false); };
+        });
+    }
+
+    // Qué está usando. Sirve para mostrarle SOLO los pasos que le sirven a él, en vez de
+    // una lista de posibilidades. Es una pista, no una certeza: los navegadores de adentro
+    // de las apps mienten bastante en el user agent, así que la salida de escape (abrir en
+    // Chrome / copiar el link) se ofrece siempre.
+    function queNavegadorEs() {
+        var ua = navigator.userAgent || '';
+        var esAndroid = /Android/i.test(ua);
+        var esIOS = /iPhone|iPad|iPod/i.test(ua);
+        var dentroDeApp = /; wv\)/.test(ua)                       // WebView de Android
+                       || /FBAN|FBAV|Instagram|Line\/|MicroMessenger/i.test(ua)
+                       || (esIOS && /AppleWebKit/.test(ua) && !/Safari/.test(ua) && !/CriOS/.test(ua));
+        return { esAndroid: esAndroid, esIOS: esIOS, dentroDeApp: dentroDeApp };
     }
 
     function mostrarAyudaPermiso(caso) {
         var caja = document.getElementById('texto-permiso');
+        var acciones = document.getElementById('acciones-permiso');
         caja.innerHTML = '';
+        acciones.innerHTML = '';
+        var nav = queNavegadorEs();
         var puntos = [];
 
         if (caso === 'sin-https') {
             puntos.push('Esta página se abrió sin conexión segura, y el celular no deja usar la ubicación así. '
                       + 'Entrá por el link que te pasaron, el que empieza con <strong>https://</strong>.');
         } else if (caso === 'no-soportado') {
-            puntos.push('Este navegador no maneja ubicación. Probá abrir el link en <strong>Chrome</strong>.');
+            puntos.push('Este navegador no maneja ubicación. Abrila en <strong>Chrome</strong>.');
+        } else if (nav.dentroDeApp) {
+            // Caso de lejos más común: tocó el link desde adentro de WhatsApp.
+            puntos.push('Abriste el link <strong>desde adentro de otra app</strong> (WhatsApp, por ejemplo), '
+                      + 'y ese navegador no entrega la ubicación nunca.');
+            puntos.push('Abrí esta misma página en el navegador del celular y va a andar.');
+        } else if (nav.esIOS) {
+            puntos.push('El permiso de ubicación está bloqueado para esta página.');
+            puntos.push('En Safari: tocá <strong>«AA»</strong> a la izquierda de la dirección → '
+                      + '<strong>Ajustes del sitio web</strong> → Ubicación → <strong>Permitir</strong>.');
+            puntos.push('Si sigue igual, revisá <strong>Ajustes → Privacidad → Localización</strong> y '
+                      + 'que Safari la tenga habilitada.');
         } else {
-            // Bloqueado. Las dos causas de lejos más comunes, en orden de probabilidad.
-            puntos.push('<strong>¿Abriste el link desde WhatsApp?</strong> El navegador de adentro de WhatsApp '
-                      + 'no da ubicación. Tocá los tres puntitos ⋮ arriba a la derecha y elegí '
-                      + '<strong>«Abrir en Chrome»</strong> (o en el navegador).');
-            puntos.push('<strong>¿Ya lo abriste en Chrome?</strong> Entonces el permiso quedó bloqueado de antes: '
-                      + 'tocá el <strong>candado 🔒</strong> al lado de la dirección → Permisos → Ubicación → Permitir. '
-                      + 'Después recargá.');
+            puntos.push('El permiso de ubicación está bloqueado para esta página.');
+            puntos.push('Tocá el <strong>candado 🔒</strong> al lado de la dirección → '
+                      + '<strong>Permisos</strong> → Ubicación → <strong>Permitir</strong>. Después recargá.');
+        }
+
+        if (caso === 'bloqueado') {
             puntos.push('Mientras tanto podés registrar igual: abrí «Agregar datos del taller» y poné el nombre.');
         }
 
         for (var i = 0; i < puntos.length; i++) {
             var p = document.createElement('p');
-            p.innerHTML = puntos[i];   // texto fijo escrito acá, no viene de la base
+            p.innerHTML = puntos[i];   // texto fijo escrito acá, nunca viene de la base
             caja.appendChild(p);
         }
+
+        // Botón que salta a Chrome de verdad. En Android un enlace intent:// abre la app
+        // aunque estemos dentro del navegador de WhatsApp; es lo más cerca de "arreglarlo
+        // solo" que se puede llegar desde una página web.
+        if (nav.esAndroid) {
+            var aChrome = document.createElement('a');
+            aChrome.href = 'intent://' + location.href.replace(/^https?:\/\//, '')
+                         + '#Intent;scheme=https;package=com.android.chrome;end';
+            aChrome.className = 'block text-center bg-red-500/20 hover:bg-red-500/30 text-red-100 border border-red-500/40 rounded-lg px-3 py-2.5 text-xs font-bold transition';
+            aChrome.innerHTML = '<i class="fa-brands fa-chrome mr-1"></i> Abrir esta página en Chrome';
+            acciones.appendChild(aChrome);
+        }
+
+        var btnCopiar = document.createElement('button');
+        btnCopiar.type = 'button';
+        btnCopiar.className = 'text-center text-red-200/70 hover:text-red-100 border border-red-500/30 rounded-lg px-3 py-2 text-xs transition';
+        btnCopiar.textContent = 'Copiar el link y pegarlo en el navegador';
+        btnCopiar.addEventListener('click', function () {
+            var boton = this;
+            var listo = function () { boton.textContent = 'Link copiado — pegalo en Chrome'; };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(location.href).then(listo, function () {
+                    window.prompt('Copiá este link:', location.href);
+                });
+            } else {
+                window.prompt('Copiá este link:', location.href);
+            }
+        });
+        acciones.appendChild(btnCopiar);
+
         cajaPermiso.classList.remove('hidden');
     }
 
@@ -403,26 +523,41 @@
     // la explicación en pantalla).
     function tomarUbicacion() {
         return porQueNoHayUbicacion().then(function (caso) {
-            if (caso !== 'preguntar') { mostrarAyudaPermiso(caso); return null; }
+            if (caso === 'sin-https' || caso === 'no-soportado' || caso === 'bloqueado') {
+                mostrarAyudaPermiso(caso);
+                return null;
+            }
 
-            estadoGps.textContent = 'Buscando señal del GPS…';
-            return new Promise(function (resolver) {
-                navigator.geolocation.getCurrentPosition(function (pos) {
-                    cajaPermiso.classList.add('hidden');
-                    resolver({
-                        lat: pos.coords.latitude,
-                        lng: pos.coords.longitude,
-                        precision: Math.round(pos.coords.accuracy || 0)
-                    });
-                }, function (err) {
-                    if (err && err.code === 1) {
-                        mostrarAyudaPermiso('bloqueado');
-                    } else {
-                        estadoGps.textContent = 'No se pudo tomar la ubicación (sin señal de GPS). '
-                                              + 'Probá salir a la vereda, o registralo con el nombre.';
-                    }
-                    resolver(null);
-                }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 });
+            // Solo se explica cuando el permiso está sin decidir. Al que ya lo dio, el botón
+            // le sigue siendo un toque y nada más.
+            var previo = (caso === 'preguntar') ? avisarAntesDePedir() : Promise.resolve(true);
+
+            return previo.then(function (seguir) {
+                if (!seguir) {
+                    estadoGps.textContent = 'Sin ubicación. Poné el nombre del taller y registralo igual.';
+                    document.getElementById('form-entrega').classList.remove('hidden');
+                    document.getElementById('f-taller').focus();
+                    return null;
+                }
+                estadoGps.textContent = 'Buscando señal del GPS…';
+                return new Promise(function (resolver) {
+                    navigator.geolocation.getCurrentPosition(function (pos) {
+                        cajaPermiso.classList.add('hidden');
+                        resolver({
+                            lat: pos.coords.latitude,
+                            lng: pos.coords.longitude,
+                            precision: Math.round(pos.coords.accuracy || 0)
+                        });
+                    }, function (err) {
+                        if (err && err.code === 1) {
+                            mostrarAyudaPermiso('bloqueado');
+                        } else {
+                            estadoGps.textContent = 'No se pudo tomar la ubicación (sin señal de GPS). '
+                                                  + 'Probá salir a la vereda, o registralo con el nombre.';
+                        }
+                        resolver(null);
+                    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 });
+                });
             });
         });
     }
