@@ -39,6 +39,21 @@
         <p id="texto-error" class="text-gray-500 text-sm">Pedile a BlackHouse OS que te mande tu link personal.</p>
     </div>
 
+    <!-- Puerta de entrada: sin ubicación no se puede trabajar (migración 036).
+         No se bloquea por "qué navegador dice ser" — el user agent miente y dejaría afuera
+         a alguien legítimo — sino por si el GPS responde o no. -->
+    <div id="pantalla-bloqueo" class="hidden text-center py-14">
+        <i class="fa-solid fa-location-crosshairs text-4xl text-red-400 mb-4"></i>
+        <h1 class="text-xl font-black text-white mb-2">Abrí esta página en Chrome</h1>
+        <p id="motivo-bloqueo" class="text-gray-400 text-sm mb-6 max-w-sm mx-auto"></p>
+        <div id="acciones-bloqueo" class="flex flex-col gap-2 max-w-xs mx-auto mb-4"></div>
+        <button id="btn-probar-gps" type="button"
+                class="text-xs text-gray-400 hover:text-white border border-gray-700 hover:border-gray-500 rounded-lg px-4 py-2 transition">
+            Ya lo abrí en Chrome — probar de nuevo
+        </button>
+        <p id="resultado-prueba" class="text-xs mt-3 hidden"></p>
+    </div>
+
     <div id="pantalla-carga" class="text-center py-20 text-gray-600 text-sm">
         <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-3"></i>
         <p>Cargando…</p>
@@ -158,7 +173,7 @@
                     </button>
                     <button id="btn-permiso-luego" type="button"
                             class="w-full text-gray-500 hover:text-gray-300 text-xs mt-3 transition">
-                        Ahora no, lo cargo con el nombre
+                        Ahora no
                     </button>
                 </div>
             </div>
@@ -208,7 +223,7 @@
                     Registrar con estos datos
                 </button>
                 <p class="text-gray-600 text-xs text-center">
-                    Sirve igual sin ubicación: si el GPS no anda, con el nombre alcanza.
+                    La ubicación va igual: estos datos son un extra, no reemplazan la marca.
                 </p>
             </form>
         </section>
@@ -405,6 +420,75 @@
             .catch(function () { return 'preguntar'; });
     }
 
+    // --- Puerta de entrada -------------------------------------------------
+    // Desde la 036 la ubicación es obligatoria, así que un navegador que no la entrega no
+    // sirve para trabajar y la página no deja pasar. El criterio NO es "qué navegador dice
+    // ser" (el user agent miente y dejaría afuera a alguien legítimo) sino si el GPS
+    // responde. Solo se bloquea de entrada cuando se puede saber que está roto SIN abrir el
+    // cartel de permiso: no hay https, no existe la API, el permiso ya está denegado, o
+    // estamos adentro del navegador de otra app y el permiso todavía no fue concedido.
+    function revisarPuerta() {
+        return porQueNoHayUbicacion().then(function (caso) {
+            if (caso === 'sin-https' || caso === 'no-soportado' || caso === 'bloqueado') {
+                mostrarBloqueo(caso);
+                return false;
+            }
+            if (caso !== 'ya-esta' && queNavegadorEs().dentroDeApp) {
+                mostrarBloqueo('dentro-de-app');
+                return false;
+            }
+            return true;
+        });
+    }
+
+    function mostrarBloqueo(caso) {
+        var motivos = {
+            'dentro-de-app': 'Abriste el link desde adentro de otra app (WhatsApp, por ejemplo) y ese '
+                           + 'navegador no entrega la ubicación. Para registrar talleres hace falta marcarla.',
+            'bloqueado':     'Este navegador tiene la ubicación bloqueada para esta página, y sin ubicación '
+                           + 'no se puede registrar un taller.',
+            'sin-https':     'Esta página se abrió sin conexión segura y el celular no permite usar la '
+                           + 'ubicación así. Entrá por el link que te pasaron, el que empieza con https.',
+            'no-soportado':  'Este navegador no maneja ubicación, y sin ubicación no se puede registrar un taller.'
+        };
+        document.getElementById('motivo-bloqueo').textContent = motivos[caso] || motivos['bloqueado'];
+        botonesAbrirEnChrome(document.getElementById('acciones-bloqueo'));
+        elCarga.classList.add('hidden');
+        elApp.classList.add('hidden');
+        elError.classList.add('hidden');
+        document.getElementById('pantalla-bloqueo').classList.remove('hidden');
+    }
+
+    // La única forma de entrar si quedó bloqueado: que el GPS conteste de verdad. Así una
+    // detección equivocada de navegador nunca deja a nadie sin poder trabajar.
+    document.getElementById('btn-probar-gps').addEventListener('click', function () {
+        var boton = this;
+        var salida = document.getElementById('resultado-prueba');
+        boton.disabled = true;
+        salida.className = 'text-xs mt-3 text-gray-400';
+        salida.textContent = 'Probando el GPS…';
+        salida.classList.remove('hidden');
+
+        if (!navigator.geolocation) {
+            boton.disabled = false;
+            salida.className = 'text-xs mt-3 text-red-400';
+            salida.textContent = 'Este navegador no tiene ubicación. Abrila en Chrome.';
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(function () {
+            salida.className = 'text-xs mt-3 text-bhGreen';
+            salida.textContent = 'Funciona. Entrando…';
+            document.getElementById('pantalla-bloqueo').classList.add('hidden');
+            elCarga.classList.remove('hidden');
+            pintarCola();
+            cargar().then(vaciarCola);
+        }, function () {
+            boton.disabled = false;
+            salida.className = 'text-xs mt-3 text-red-400';
+            salida.textContent = 'Sigue sin dar ubicación. Abrí la página en Chrome con el botón de arriba.';
+        }, { enableHighAccuracy: false, timeout: 12000, maximumAge: 60000 });
+    });
+
     // Explica para qué se pide, ANTES de que aparezca el cartel del navegador. No reemplaza
     // al cartel — ninguna página puede dibujar ese — pero evita que lo bloquee de reflejo,
     // que es lo que no tiene vuelta atrás desde acá.
@@ -478,7 +562,8 @@
         }
 
         if (caso === 'bloqueado') {
-            puntos.push('Mientras tanto podés registrar igual: abrí «Agregar datos del taller» y poné el nombre.');
+            puntos.push('Sin ubicación no se puede registrar el taller: es lo que permite '
+                      + 'ubicarlo después y avisar si otro repartidor ya pasó por ahí.');
         }
 
         for (var i = 0; i < puntos.length; i++) {
@@ -487,21 +572,27 @@
             caja.appendChild(p);
         }
 
-        // Botón que salta a Chrome de verdad. En Android un enlace intent:// abre la app
-        // aunque estemos dentro del navegador de WhatsApp; es lo más cerca de "arreglarlo
-        // solo" que se puede llegar desde una página web.
-        if (nav.esAndroid) {
+        botonesAbrirEnChrome(acciones);
+        cajaPermiso.classList.remove('hidden');
+    }
+
+    // Las dos salidas para llegar a un navegador que sí entregue ubicación.
+    // En Android un enlace intent:// abre Chrome de verdad, aunque estemos dentro del
+    // navegador de WhatsApp: es lo más cerca de "arreglarlo solo" a lo que se puede llegar
+    // desde una página web. En iPhone no existe equivalente, queda copiar y pegar.
+    function botonesAbrirEnChrome(contenedor) {
+        contenedor.innerHTML = '';
+        if (queNavegadorEs().esAndroid) {
             var aChrome = document.createElement('a');
             aChrome.href = 'intent://' + location.href.replace(/^https?:\/\//, '')
                          + '#Intent;scheme=https;package=com.android.chrome;end';
-            aChrome.className = 'block text-center bg-red-500/20 hover:bg-red-500/30 text-red-100 border border-red-500/40 rounded-lg px-3 py-2.5 text-xs font-bold transition';
+            aChrome.className = 'block text-center bg-bhGreen text-black font-extrabold rounded-lg px-3 py-3 text-sm transition hover:opacity-90';
             aChrome.innerHTML = '<i class="fa-brands fa-chrome mr-1"></i> Abrir esta página en Chrome';
-            acciones.appendChild(aChrome);
+            contenedor.appendChild(aChrome);
         }
-
         var btnCopiar = document.createElement('button');
         btnCopiar.type = 'button';
-        btnCopiar.className = 'text-center text-red-200/70 hover:text-red-100 border border-red-500/30 rounded-lg px-3 py-2 text-xs transition';
+        btnCopiar.className = 'text-center text-gray-400 hover:text-white border border-gray-700 rounded-lg px-3 py-2 text-xs transition';
         btnCopiar.textContent = 'Copiar el link y pegarlo en el navegador';
         btnCopiar.addEventListener('click', function () {
             var boton = this;
@@ -514,9 +605,7 @@
                 window.prompt('Copiá este link:', location.href);
             }
         });
-        acciones.appendChild(btnCopiar);
-
-        cajaPermiso.classList.remove('hidden');
+        contenedor.appendChild(btnCopiar);
     }
 
     // Toma la ubicación. Resuelve con el punto, o con null si no se pudo (y ahí ya dejó
@@ -534,9 +623,8 @@
 
             return previo.then(function (seguir) {
                 if (!seguir) {
-                    estadoGps.textContent = 'Sin ubicación. Poné el nombre del taller y registralo igual.';
-                    document.getElementById('form-entrega').classList.remove('hidden');
-                    document.getElementById('f-taller').focus();
+                    estadoGps.textContent = 'Sin ubicación no se puede registrar. '
+                                          + 'Tocá el botón otra vez cuando quieras activarla.';
                     return null;
                 }
                 estadoGps.textContent = 'Buscando señal del GPS…';
@@ -805,12 +893,11 @@
             cuerpo.precision_m = punto.precision;
         }
 
-        // Lo único que no sirve: ni ubicación ni nombre. Lo repite el CHECK de la base.
-        if (!punto && !cuerpo.taller_nombre) {
-            elAviso.textContent = 'Marcá la ubicación, o escribí el nombre del taller.';
+        // La ubicación es obligatoria (036). Lo repite lat/lng NOT NULL en la base.
+        if (!punto) {
+            elAviso.textContent = 'Primero tocá «Marcar este taller»: sin ubicación no se registra.';
             elAviso.className = 'text-center text-xs mt-2 text-red-400';
             elAviso.classList.remove('hidden');
-            document.getElementById('form-entrega').classList.remove('hidden');
             return Promise.resolve();
         }
 
@@ -879,8 +966,12 @@
     if (!token) {
         mostrarError('Te falta el link personal. Pedíselo a BlackHouse OS.');
     } else {
-        pintarCola();
-        cargar().then(vaciarCola);   // al abrir, intenta subir lo que haya quedado pendiente
+        // Primero la puerta: si el navegador no da ubicación, no se entra a trabajar.
+        revisarPuerta().then(function (puedeTrabajar) {
+            if (!puedeTrabajar) return;
+            pintarCola();
+            return cargar().then(vaciarCola);   // sube lo que haya quedado pendiente
+        });
     }
 })();
 </script>

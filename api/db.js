@@ -425,14 +425,14 @@ module.exports = async (req, res) => {
         const hayPunto = lat !== null && lng !== null;
         const prec = Number(req.body.precision_m);
 
-        // El nombre es opcional desde la 035: en moto no hay tiempo de escribirlo, y con la
-        // coordenada se ubica el local igual. Lo único que no se acepta es una entrega sin
-        // nombre Y sin punto, porque no se podría ni ubicar ni identificar (lo repite el
-        // CHECK entregas_nombre_o_punto_check en la base).
-        const taller = textoLimpio(req.body.taller_nombre, 120);
-        if (!taller && !hayPunto) {
-          return res.status(400).json({ error: 'Marcá la ubicación, o escribí el nombre del taller.' });
+        // La ubicación es OBLIGATORIA desde la 036: una entrega sin coordenada no se puede
+        // verificar, no entra en el aviso de local repetido y no aparece en el mapa. La base
+        // lo repite con lat/lng NOT NULL; acá se corta antes para dar un mensaje entendible.
+        // El nombre, al revés, sigue siendo opcional (en moto no hay tiempo de escribirlo).
+        if (!hayPunto) {
+          return res.status(400).json({ error: 'Falta la ubicación. Tenés que marcarla para registrar el taller.' });
         }
+        const taller = textoLimpio(req.body.taller_nombre, 120);
 
         const { data: creada, error: errIns } = await supabase
           .from('entregas')
